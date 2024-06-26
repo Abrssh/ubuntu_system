@@ -41,8 +41,8 @@ class AuthGate extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Text(
                         action == AuthAction.signIn
-                            ? 'Welcome to P2P Rentals! Please sign in to continue.'
-                            : 'Welcome to P2P Rentals Please create an account to continue',
+                            ? 'Welcome to Ubuntu! Please sign in to continue.'
+                            : 'Welcome to Ubuntu, Please create an account to continue',
                       ),
                     );
                   },

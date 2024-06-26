@@ -1,4 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/employee_database_service.dart';
+import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/pc_provider_database_service.dart';
+import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/user_database_service.dart';
+import 'package:ubuntu_system/Data/Model/employee_account.dart';
+import 'package:ubuntu_system/Data/Model/pc_provider.dart';
+import 'package:ubuntu_system/Data/Model/user_acc.dart';
+import 'package:ubuntu_system/Provider/authentication_provider.dart';
+import 'package:ubuntu_system/Shared/constant.dart';
+import 'package:ubuntu_system/View/Screens/Administrator/administrator_dashboard.dart';
+import 'package:ubuntu_system/View/Screens/Employee/employee_dashboard.dart';
+import 'package:ubuntu_system/View/Screens/OnBoardingManager/onboarding_manager_dashboard.dart';
+import 'package:ubuntu_system/View/Screens/PC%20Provider/pc_provider_dashboard.dart';
 import 'package:ubuntu_system/View/Widgets/loading_animation.dart';
 import 'package:intl/intl.dart';
 
@@ -11,18 +24,20 @@ class AccountCreation extends StatefulWidget {
 
 class _AccountCreationState extends State<AccountCreation> {
   final _formKey = GlobalKey<FormState>();
-  String genderVal = "PC Provider";
+  String genderVal = "Male";
   final List<String> gender = ["Male", "Female"];
-  late int age;
 
-  late String firstName, lastName, email;
+  late String firstName, lastName, email = "", phoneNumber;
   late String city;
 
+  DateTime birthDate = DateTime.now();
+
+  bool emailExist = false;
+
   // PC Provider Vars
-  late String country, state, streetAddress, emailPassword;
+  late String state, streetAddress, emailPassword;
   late int zipCode;
 
-  DateTime birthDate = DateTime.now();
   final List<String> _countrySuggestion = <String>['Ethiopia', 'USA', 'UK'];
   final TextEditingController _countrySuggestionController =
       TextEditingController();
@@ -36,7 +51,7 @@ class _AccountCreationState extends State<AccountCreation> {
   }
 
   // Employee Vars
-  late String team, address, govId;
+  late String address, govtId;
   final List<String> _teamSuggestions = <String>[
     'Math',
     'Biology',
@@ -61,32 +76,71 @@ class _AccountCreationState extends State<AccountCreation> {
   @override
   void initState() {
     debugPrint("Profile Creation Entered");
-    // ProfileDatabaseService()
-    //     .checkIfProfileExist(
-    //         context.read<AuthenticationProvider>().userVal!.uid)
-    //     .then((value) {
-    //   // means profile exist
-    //   if (value != "false") {
-    //     ProfileDatabaseService().getProfile(value).then((value) {
-    //       setState(() {
-    //         loading = true;
-    //       });
-    //       context.read<ProfileProvider>().assignProfile(value);
-    //       // context.push("/${RouteConstant.ownerDashboardPath}");
-    //       Navigator.push(context, MaterialPageRoute(
-    //         builder: (context) {
-    //           return const OwnerDashboard();
-    //         },
-    //       ));
-    //       debugPrint("OwnerDashboard Pushed $value");
-    //     });
-    //   } else {
-    //     setState(() {
-    //       loading = true;
-    //     });
-    //   }
-    // });
-    // super.initState();
+    var authProv = context.read<AuthenticationProvider>().userVal;
+    UserDatabaseService()
+        .checkIfUserExist(authProv!.uid, authProv.email!)
+        .then((value) {
+      // debugPrint("Value: $value ${value.userType}");
+      if (value.userType == "pcprovider") {
+        setState(() {
+          loading = true;
+        });
+        Navigator.push(context, MaterialPageRoute(
+          builder: (context) {
+            return const PcProviderDashboard();
+          },
+        ));
+      } else if (value.userType == "employee") {
+        setState(() {
+          loading = true;
+        });
+        Navigator.push(context, MaterialPageRoute(
+          builder: (context) {
+            return const EmployeeDashBoard();
+          },
+        ));
+      } else if (value.userType == "administrator") {
+        UserDatabaseService()
+            .updateUserAccUid(authProv.uid, authProv.email!)
+            .then(
+          (value) {
+            setState(() {
+              loading = true;
+            });
+            Navigator.push(context, MaterialPageRoute(
+              builder: (context) {
+                return const AdministratorDashBoard();
+              },
+            ));
+          },
+        );
+      } else if (value.userType == "onboardingmanager") {
+        UserDatabaseService()
+            .updateUserAccUid(authProv.uid, authProv.email!)
+            .then(
+          (value) {
+            setState(() {
+              loading = true;
+            });
+            Navigator.push(context, MaterialPageRoute(
+              builder: (context) {
+                return const OnboardingManagerDashBoard();
+              },
+            ));
+          },
+        );
+      } else {
+        // debugPrint("Else Entered: ${value.userType}");
+        setState(() {
+          loading = true;
+        });
+        if (authProv.email!.isNotEmpty) {
+          email = authProv.email!;
+          emailExist = true;
+        }
+      }
+    });
+    super.initState();
   }
 
   @override
@@ -94,8 +148,6 @@ class _AccountCreationState extends State<AccountCreation> {
     var deviceSize = MediaQuery.of(context).size;
     double deviceWidth = deviceSize.width;
     double deviceHeight = deviceSize.height;
-
-    loading = true;
 
     return Scaffold(
       body: loading
@@ -161,12 +213,12 @@ class _AccountCreationState extends State<AccountCreation> {
                                   initialValue: email,
                                   decoration:
                                       const InputDecoration(labelText: 'Email'),
-                                  readOnly: true,
+                                  readOnly: emailExist,
                                   validator: (value) => value!.isEmpty
                                       ? "Enter your Email"
                                       : null,
                                   onChanged: (value) {
-                                    city = value;
+                                    email = value;
                                   },
                                 ),
                                 SizedBox(
@@ -175,6 +227,7 @@ class _AccountCreationState extends State<AccountCreation> {
                                 TextFormField(
                                   decoration: const InputDecoration(
                                       labelText: 'Email Password'),
+                                  obscureText: true,
                                   validator: (value) => value!.isEmpty
                                       ? "Enter your Email Password"
                                       : null,
@@ -186,100 +239,30 @@ class _AccountCreationState extends State<AccountCreation> {
                                   height: deviceHeight * 0.03,
                                 ),
                                 TextFormField(
-                                  decoration: const InputDecoration(
-                                      labelText: 'Country'),
-                                  validator: (value) => value!.isEmpty
-                                      ? "Enter your Country"
-                                      : null,
-                                  onChanged: (value) {
-                                    country = value;
-                                  },
-                                ),
-                                SizedBox(
-                                  height: deviceHeight * 0.03,
-                                ),
-                                TextFormField(
-                                  decoration:
-                                      const InputDecoration(labelText: 'State'),
-                                  validator: (value) => value!.isEmpty
-                                      ? "Enter your State"
-                                      : null,
-                                  onChanged: (value) {
-                                    state = value;
-                                  },
-                                ),
-                                SizedBox(
-                                  height: deviceHeight * 0.03,
-                                ),
-                                TextFormField(
-                                  decoration:
-                                      const InputDecoration(labelText: 'City'),
-                                  validator: (value) =>
-                                      value!.isEmpty ? "Enter your City" : null,
-                                  onChanged: (value) {
-                                    city = value;
-                                  },
-                                ),
-                                SizedBox(
-                                  height: deviceHeight * 0.03,
-                                ),
-                                TextFormField(
-                                  decoration: const InputDecoration(
-                                      labelText: 'Street Address'),
-                                  validator: (value) =>
-                                      value!.isEmpty ? "Enter your City" : null,
-                                  onChanged: (value) {
-                                    city = value;
-                                  },
-                                ),
-                                SizedBox(
-                                  height: deviceHeight * 0.03,
-                                ),
-                                TextFormField(
-                                  decoration: const InputDecoration(
-                                    iconColor: Colors.white,
-                                    labelText: 'Zip Code',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  validator: (value) => value!.isEmpty &&
-                                          (value.isNotEmpty
-                                                  ? int.tryParse(value)
-                                                  : false) !=
-                                              null
-                                      ? "Enter Your ZipCode"
+                                  decoration: textInputDecoration.copyWith(
+                                      hintText: "Phone Number"),
+                                  validator: (value) => (value!.isEmpty ||
+                                          double.tryParse(value) == null)
+                                      ? "Enter your phone Number"
                                       : null,
                                   onChanged: (value) {
                                     setState(() {
-                                      if (int.tryParse(value) != null) {
-                                        zipCode = int.parse(value);
-                                      }
+                                      phoneNumber = value;
                                     });
                                   },
+                                  keyboardType: TextInputType.phone,
                                 ),
                                 SizedBox(
                                   height: deviceHeight * 0.03,
                                 ),
                                 TextFormField(
                                   decoration: const InputDecoration(
-                                    iconColor: Colors.white,
-                                    labelText: 'Age',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  validator: (value) => value!.isEmpty &&
-                                          (value.isNotEmpty
-                                                  ? int.tryParse(value)
-                                                  : false) !=
-                                              null
-                                      ? "Enter Your Age"
+                                      labelText: 'Government ID'),
+                                  validator: (value) => value!.isEmpty
+                                      ? "Enter your Government ID"
                                       : null,
                                   onChanged: (value) {
-                                    setState(() {
-                                      if (int.tryParse(value) != null) {
-                                        age = int.parse(value);
-                                      }
-                                    });
+                                    govtId = value;
                                   },
                                 ),
                                 SizedBox(
@@ -345,13 +328,79 @@ class _AccountCreationState extends State<AccountCreation> {
                                 SizedBox(
                                   height: deviceHeight * 0.03,
                                 ),
+                                TextFormField(
+                                  decoration:
+                                      const InputDecoration(labelText: 'State'),
+                                  validator: (value) => value!.isEmpty
+                                      ? "Enter your State"
+                                      : null,
+                                  onChanged: (value) {
+                                    state = value;
+                                  },
+                                ),
+                                SizedBox(
+                                  height: deviceHeight * 0.03,
+                                ),
+                                TextFormField(
+                                  decoration:
+                                      const InputDecoration(labelText: 'City'),
+                                  validator: (value) =>
+                                      value!.isEmpty ? "Enter your City" : null,
+                                  onChanged: (value) {
+                                    city = value;
+                                  },
+                                ),
+                                SizedBox(
+                                  height: deviceHeight * 0.03,
+                                ),
+                                TextFormField(
+                                  decoration: const InputDecoration(
+                                      labelText: 'Street Address'),
+                                  validator: (value) =>
+                                      value!.isEmpty ? "Enter your City" : null,
+                                  onChanged: (value) {
+                                    streetAddress = value;
+                                  },
+                                ),
+                                SizedBox(
+                                  height: deviceHeight * 0.03,
+                                ),
+                                TextFormField(
+                                  decoration: const InputDecoration(
+                                    iconColor: Colors.white,
+                                    labelText: 'Zip Code',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  keyboardType: TextInputType.number,
+                                  validator: (value) => value!.isEmpty &&
+                                          (value.isNotEmpty
+                                                  ? int.tryParse(value)
+                                                  : false) !=
+                                              null
+                                      ? "Enter Your ZipCode"
+                                      : null,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (int.tryParse(value) != null) {
+                                        zipCode = int.parse(value);
+                                      }
+                                    });
+                                  },
+                                ),
+                                SizedBox(
+                                  height: deviceHeight * 0.03,
+                                ),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceEvenly,
                                   children: <Widget>[
                                     Row(
                                       children: <Widget>[
-                                        const Text('Select Your BirthDate'),
+                                        Text(
+                                          'Select Your BirthDate',
+                                          style: TextStyle(
+                                              fontSize: deviceWidth * 0.04),
+                                        ),
                                         TextButton(
                                           child: Text(DateFormat.yMd()
                                               .format(birthDate)),
@@ -360,7 +409,7 @@ class _AccountCreationState extends State<AccountCreation> {
                                                 await showDatePicker(
                                               context: context,
                                               initialDate: birthDate,
-                                              firstDate: DateTime(1995, 8),
+                                              firstDate: DateTime(1910, 8),
                                               lastDate: DateTime(2101),
                                             );
                                             if (picked != null &&
@@ -385,7 +434,7 @@ class _AccountCreationState extends State<AccountCreation> {
                                     Text(
                                       "Gender: ",
                                       style: TextStyle(
-                                          fontSize: deviceWidth * 0.05),
+                                          fontSize: deviceWidth * 0.04),
                                     ),
                                     DropdownButton<String>(
                                       value: genderVal,
@@ -409,68 +458,125 @@ class _AccountCreationState extends State<AccountCreation> {
                                   padding: EdgeInsets.symmetric(
                                       vertical: deviceHeight * 0.1),
                                   child: ElevatedButton(
-                                    onPressed: () {
+                                    onPressed: () async {
                                       if (_formKey.currentState!.validate()) {
-                                        // int ageRangeSelected = 0;
-                                        // switch (ageRangeVal) {
-                                        //   case "18-25":
-                                        //     ageRangeSelected = 0;
-                                        //   case "26-34":
-                                        //     ageRangeSelected = 1;
-                                        //   case "35-60":
-                                        //     ageRangeSelected = 2;
-                                        //     break;
-                                        //   default:
-                                        // }
-                                        // setState(() {
-                                        //   loading = false;
-                                        // });
-                                        // Profile profile = Profile(
-                                        //     address: homeAddress,
-                                        //     ageRange: ageRangeSelected,
-                                        //     lastName: lastName,
-                                        //     userName: username,
-                                        //     firstName: firstName,
-                                        //     profileId: "",
-                                        //     uid: context
-                                        //         .read<AuthenticationProvider>()
-                                        //         .userVal!
-                                        //         .uid,
-                                        //     city: city);
-                                        // ProfileDatabaseService()
-                                        //     .createProfile(profile)
-                                        //     .then((value) {
-                                        //   setState(() {
-                                        //     loading = true;
-                                        //   });
-                                        //   if (value != "false") {
-                                        //     ScaffoldMessenger.of(context)
-                                        //         .showSnackBar(const SnackBar(
-                                        //       content:
-                                        //           Text('Profile Created Successfully'),
-                                        //       backgroundColor: Colors.green,
-                                        //     ));
-                                        //     // context.push(
-                                        //     //     "/${RouteConstant.ownerDashboardPath}");
-                                        //     context
-                                        //         .read<ProfileProvider>()
-                                        //         .assignProfileId(value);
-                                        //     Navigator.push(context, MaterialPageRoute(
-                                        //       builder: (context) {
-                                        //         return const OwnerDashboard();
-                                        //       },
-                                        //     ));
-                                        //   } else {
-                                        //     ScaffoldMessenger.of(context)
-                                        //         .showSnackBar(const SnackBar(
-                                        //       content: Text('Profile Creation Failed'),
-                                        //       backgroundColor: Colors.red,
-                                        //     ));
-                                        //   }
-                                        // });
+                                        setState(() {
+                                          loading = false;
+                                        });
+                                        var authProv = context
+                                            .read<AuthenticationProvider>()
+                                            .userVal;
+                                        PcProvider pcProvider = PcProvider(
+                                            uid: authProv!.uid,
+                                            pcProviderDocId: "",
+                                            firstName: firstName,
+                                            lastName: lastName,
+                                            birthDate: birthDate,
+                                            govtId: govtId,
+                                            country:
+                                                _countrySuggestionController
+                                                    .text,
+                                            state: state,
+                                            city: city,
+                                            streetaddress: streetAddress,
+                                            email: email,
+                                            phoneNumber: phoneNumber,
+                                            team: "",
+                                            zipCode: zipCode,
+                                            formstatus: 0,
+                                            formHistory: {},
+                                            accountStatus: 0,
+                                            totalAmountEarned: 0,
+                                            personalAmountEarned: 0);
+                                        UserAcc userAcc =
+                                            await UserDatabaseService()
+                                                .checkIfUserExist(
+                                                    authProv.uid, "");
+                                        if (userAcc.docId != "false") {
+                                          PcProviderDatabaseService()
+                                              .createPcProviderAccount(
+                                                  pcProvider)
+                                              .then((value) {
+                                            setState(() {
+                                              loading = true;
+                                            });
+                                            if (value != false) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Profile Created Successfully'),
+                                                backgroundColor: Colors.green,
+                                              ));
+                                              Navigator.push(context,
+                                                  MaterialPageRoute(
+                                                builder: (context) {
+                                                  return const PcProviderDashboard();
+                                                },
+                                              ));
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Profile Creation Failed'),
+                                                backgroundColor: Colors.red,
+                                              ));
+                                            }
+                                          });
+                                        } else {
+                                          UserDatabaseService()
+                                              .createUserAcc(authProv.uid,
+                                                  "pcprovider", email)
+                                              .then((value) {
+                                            if (value) {
+                                              PcProviderDatabaseService()
+                                                  .createPcProviderAccount(
+                                                      pcProvider)
+                                                  .then((value) {
+                                                setState(() {
+                                                  loading = true;
+                                                });
+                                                if (value != false) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                          const SnackBar(
+                                                    content: Text(
+                                                        'Profile Created Successfully'),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ));
+                                                  Navigator.push(context,
+                                                      MaterialPageRoute(
+                                                    builder: (context) {
+                                                      return const PcProviderDashboard();
+                                                    },
+                                                  ));
+                                                } else {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                          const SnackBar(
+                                                    content: Text(
+                                                        'Profile Creation Failed'),
+                                                    backgroundColor: Colors.red,
+                                                  ));
+                                                }
+                                              });
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Profile Creation Failed'),
+                                                backgroundColor: Colors.red,
+                                              ));
+                                            }
+                                          });
+                                        }
                                       }
                                     },
-                                    child: const Text('Submit'),
+                                    child: Text(
+                                      'Submit',
+                                      style: TextStyle(
+                                          fontSize: deviceWidth * 0.045),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -535,27 +641,56 @@ class _AccountCreationState extends State<AccountCreation> {
                                 SizedBox(
                                   height: deviceHeight * 0.03,
                                 ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        Text(
+                                          'Select Your BirthDate',
+                                          style: TextStyle(
+                                              fontSize: deviceWidth * 0.04),
+                                        ),
+                                        TextButton(
+                                          child: Text(DateFormat.yMd()
+                                              .format(birthDate)),
+                                          onPressed: () async {
+                                            final DateTime? picked =
+                                                await showDatePicker(
+                                              context: context,
+                                              initialDate: birthDate,
+                                              firstDate: DateTime(1910, 8),
+                                              lastDate: DateTime(2101),
+                                            );
+                                            if (picked != null &&
+                                                picked != birthDate) {
+                                              setState(() {
+                                                birthDate = picked;
+                                              });
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: deviceHeight * 0.03,
+                                ),
                                 TextFormField(
-                                  decoration: const InputDecoration(
-                                    iconColor: Colors.white,
-                                    labelText: 'Age',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  validator: (value) => value!.isEmpty &&
-                                          (value.isNotEmpty
-                                                  ? int.tryParse(value)
-                                                  : false) !=
-                                              null
-                                      ? "Enter Your Age"
+                                  decoration: textInputDecoration.copyWith(
+                                      hintText: "Phone Number"),
+                                  validator: (value) => (value!.isEmpty ||
+                                          double.tryParse(value) == null)
+                                      ? "Enter your phone Number"
                                       : null,
                                   onChanged: (value) {
                                     setState(() {
-                                      if (int.tryParse(value) != null) {
-                                        age = int.parse(value);
-                                      }
+                                      phoneNumber = value;
                                     });
                                   },
+                                  keyboardType: TextInputType.phone,
                                 ),
                                 SizedBox(
                                   height: deviceHeight * 0.03,
@@ -592,7 +727,22 @@ class _AccountCreationState extends State<AccountCreation> {
                                       ? "Enter your Government ID"
                                       : null,
                                   onChanged: (value) {
-                                    govId = value;
+                                    govtId = value;
+                                  },
+                                ),
+                                SizedBox(
+                                  height: deviceHeight * 0.03,
+                                ),
+                                TextFormField(
+                                  initialValue: email,
+                                  decoration:
+                                      const InputDecoration(labelText: 'Email'),
+                                  readOnly: emailExist,
+                                  validator: (value) => value!.isEmpty
+                                      ? "Enter your Email"
+                                      : null,
+                                  onChanged: (value) {
+                                    email = value;
                                   },
                                 ),
                                 SizedBox(
@@ -663,70 +813,122 @@ class _AccountCreationState extends State<AccountCreation> {
                                   padding: EdgeInsets.symmetric(
                                       vertical: deviceHeight * 0.1),
                                   child: ElevatedButton(
-                                    onPressed: () {
+                                    onPressed: () async {
                                       if (_formKey.currentState!.validate()) {
-                                        if (accountSelected == 0) {
-                                        } else {}
-                                        // int ageRangeSelected = 0;
-                                        // switch (ageRangeVal) {
-                                        //   case "18-25":
-                                        //     ageRangeSelected = 0;
-                                        //   case "26-34":
-                                        //     ageRangeSelected = 1;
-                                        //   case "35-60":
-                                        //     ageRangeSelected = 2;
-                                        //     break;
-                                        //   default:
-                                        // }
-                                        // setState(() {
-                                        //   loading = false;
-                                        // });
-                                        // Profile profile = Profile(
-                                        //     address: homeAddress,
-                                        //     ageRange: ageRangeSelected,
-                                        //     lastName: lastName,
-                                        //     userName: username,
-                                        //     firstName: firstName,
-                                        //     profileId: "",
-                                        //     uid: context
-                                        //         .read<AuthenticationProvider>()
-                                        //         .userVal!
-                                        //         .uid,
-                                        //     city: city);
-                                        // ProfileDatabaseService()
-                                        //     .createProfile(profile)
-                                        //     .then((value) {
-                                        //   setState(() {
-                                        //     loading = true;
-                                        //   });
-                                        //   if (value != "false") {
-                                        //     ScaffoldMessenger.of(context)
-                                        //         .showSnackBar(const SnackBar(
-                                        //       content:
-                                        //           Text('Profile Created Successfully'),
-                                        //       backgroundColor: Colors.green,
-                                        //     ));
-                                        //     // context.push(
-                                        //     //     "/${RouteConstant.ownerDashboardPath}");
-                                        //     context
-                                        //         .read<ProfileProvider>()
-                                        //         .assignProfileId(value);
-                                        //     Navigator.push(context, MaterialPageRoute(
-                                        //       builder: (context) {
-                                        //         return const OwnerDashboard();
-                                        //       },
-                                        //     ));
-                                        //   } else {
-                                        //     ScaffoldMessenger.of(context)
-                                        //         .showSnackBar(const SnackBar(
-                                        //       content: Text('Profile Creation Failed'),
-                                        //       backgroundColor: Colors.red,
-                                        //     ));
-                                        //   }
-                                        // });
+                                        debugPrint("Employee Creation");
+                                        setState(() {
+                                          loading = false;
+                                        });
+                                        var authProv = context
+                                            .read<AuthenticationProvider>()
+                                            .userVal;
+                                        EmployeeAccount employeeAccount =
+                                            EmployeeAccount(
+                                                uid: authProv!.uid,
+                                                firstName: firstName,
+                                                lastName: lastName,
+                                                birthdate: birthDate,
+                                                city: city,
+                                                address: address,
+                                                email: email,
+                                                govtId: govtId,
+                                                amountReceived: 0,
+                                                phoneNumber: phoneNumber,
+                                                status: 0,
+                                                manager: false,
+                                                managerId: "",
+                                                pcProviderId: "",
+                                                team: _teamsuggestionController
+                                                    .text);
+                                        UserAcc userAcc =
+                                            await UserDatabaseService()
+                                                .checkIfUserExist(
+                                                    authProv.uid, "");
+                                        if (userAcc.docId != "false") {
+                                          EmployeeDatabaseService()
+                                              .createEmployeeAccount(
+                                                  employeeAccount)
+                                              .then((value) {
+                                            setState(() {
+                                              loading = true;
+                                            });
+                                            if (value != false) {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Profile Created Successfully'),
+                                                backgroundColor: Colors.green,
+                                              ));
+                                              Navigator.push(context,
+                                                  MaterialPageRoute(
+                                                builder: (context) {
+                                                  return const EmployeeDashBoard();
+                                                },
+                                              ));
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Profile Creation Failed'),
+                                                backgroundColor: Colors.red,
+                                              ));
+                                            }
+                                          });
+                                        } else {
+                                          UserDatabaseService()
+                                              .createUserAcc(authProv.uid,
+                                                  "employee", email)
+                                              .then((value) {
+                                            if (value) {
+                                              EmployeeDatabaseService()
+                                                  .createEmployeeAccount(
+                                                      employeeAccount)
+                                                  .then((value) {
+                                                setState(() {
+                                                  loading = true;
+                                                });
+                                                if (value != false) {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                          const SnackBar(
+                                                    content: Text(
+                                                        'Profile Created Successfully'),
+                                                    backgroundColor:
+                                                        Colors.green,
+                                                  ));
+                                                  Navigator.push(context,
+                                                      MaterialPageRoute(
+                                                    builder: (context) {
+                                                      return const EmployeeDashBoard();
+                                                    },
+                                                  ));
+                                                } else {
+                                                  ScaffoldMessenger.of(context)
+                                                      .showSnackBar(
+                                                          const SnackBar(
+                                                    content: Text(
+                                                        'Profile Creation Failed'),
+                                                    backgroundColor: Colors.red,
+                                                  ));
+                                                }
+                                              });
+                                            } else {
+                                              ScaffoldMessenger.of(context)
+                                                  .showSnackBar(const SnackBar(
+                                                content: Text(
+                                                    'Profile Creation Failed'),
+                                                backgroundColor: Colors.red,
+                                              ));
+                                            }
+                                          });
+                                        }
                                       }
                                     },
-                                    child: const Text('Submit'),
+                                    child: Text(
+                                      'Submit',
+                                      style: TextStyle(
+                                          fontSize: deviceWidth * 0.045),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -735,31 +937,75 @@ class _AccountCreationState extends State<AccountCreation> {
                         ),
                       ),
                     )
-              : Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    children: [
-                      Card(
-                        child: ElevatedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                accountSelected = true;
-                              });
-                            },
-                            icon: const Icon(Icons.computer),
-                            label: const Text("PC Provider")),
-                      ),
-                      Card(
-                        child: ElevatedButton.icon(
-                            onPressed: () {
-                              setState(() {
-                                accountSelected = true;
-                              });
-                            },
-                            icon: const Icon(Icons.account_box),
-                            label: const Text("Employee")),
-                      ),
-                    ],
+              : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          height: deviceHeight * 0.4,
+                          child: Card(
+                            color: Colors.grey[100],
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.computer,
+                                    size: deviceHeight * 0.2,
+                                  ),
+                                  ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          accountSelected = true;
+                                          accountType = 0;
+                                        });
+                                      },
+                                      child: Text(
+                                        "PC Provider",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w300,
+                                            fontSize: deviceWidth * 0.05),
+                                      )),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: deviceHeight * 0.4,
+                          child: Card(
+                            color: Colors.grey[100],
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.account_box,
+                                    size: deviceHeight * 0.2,
+                                  ),
+                                  ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          accountSelected = true;
+                                          accountType = 1;
+                                        });
+                                      },
+                                      child: Text(
+                                        "Employee",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w300,
+                                            fontSize: deviceWidth * 0.05),
+                                      )),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
           : const LoadingAnimation(),
