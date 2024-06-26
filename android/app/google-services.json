@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "902696690885",
+    "project_id": "ubuntusystem-940be",
+    "storage_bucket": "ubuntusystem-940be.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:902696690885:android:bde62413412975f8647cac",
+        "android_client_info": {
+          "package_name": "com.example.ubuntu_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOXFzT7CRyDVQqekNqzgSNAqBpg2wfyMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

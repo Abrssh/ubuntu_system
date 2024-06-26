@@ -1,0 +1,27 @@
+name: ubuntu_system
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.2.6 <4.0.0'
+
+dependencies:
+  firebase_auth: ^4.17.8
+  flutter_lints: ^2.0.0
+  firebase_core: ^2.27.0
+  firebase_ui_oauth_google: ^1.2.10
+  provider: ^6.1.2
+  firebase_ui_auth: ^1.13.1
+  flutter_spinkit: ^5.2.1
+  cloud_firestore: ^4.15.8
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+
+flutter:
+  uses-material-design: true
