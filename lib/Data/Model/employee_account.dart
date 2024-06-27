@@ -16,7 +16,7 @@ class EmployeeAccount {
   final int status;
   final double amountReceived;
 
-  DateTime birthdate;
+  DateTime birthdate, createdDate;
 
   EmployeeAccount(
       {required this.uid,
@@ -24,6 +24,7 @@ class EmployeeAccount {
       required this.firstName,
       required this.lastName,
       required this.birthdate,
+      required this.createdDate,
       required this.city,
       required this.address,
       required this.email,

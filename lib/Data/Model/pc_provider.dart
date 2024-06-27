@@ -12,7 +12,7 @@ class PcProvider {
       phoneNumber,
       team;
 
-  final DateTime birthDate;
+  final DateTime birthDate, createdDate;
 
   // accountstatus 0 EQ, 1 teamviewer disconnected, 2 verify email and 3 active/tasking
   // form status 0 Ready to onboard, 1 onboarded, 2 ready to apply, 3 applied, 4 ready to setup and 5 ready to be active
@@ -28,6 +28,7 @@ class PcProvider {
       required this.firstName,
       required this.lastName,
       required this.birthDate,
+      required this.createdDate,
       required this.govtId,
       required this.country,
       required this.state,

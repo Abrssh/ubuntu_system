@@ -23,7 +23,8 @@ class EmployeeDatabaseService {
         "pcProviderId": employeeAccount.pcProviderId,
         "managerId": employeeAccount.managerId,
         "manager": employeeAccount.manager,
-        "amountReceived": employeeAccount.amountReceived
+        "amountReceived": employeeAccount.amountReceived,
+        "createdDate": Timestamp.fromDate(employeeAccount.createdDate)
       }).then((value) => true);
     } catch (e) {
       debugPrint("CreateEmployeeAccount Error: $e");

@@ -472,6 +472,7 @@ class _AccountCreationState extends State<AccountCreation> {
                                             firstName: firstName,
                                             lastName: lastName,
                                             birthDate: birthDate,
+                                            createdDate: DateTime.now(),
                                             govtId: govtId,
                                             country:
                                                 _countrySuggestionController
@@ -828,6 +829,7 @@ class _AccountCreationState extends State<AccountCreation> {
                                                 firstName: firstName,
                                                 lastName: lastName,
                                                 birthdate: birthDate,
+                                                createdDate: DateTime.now(),
                                                 city: city,
                                                 address: address,
                                                 email: email,
