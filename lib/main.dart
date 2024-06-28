@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
+import 'package:ubuntu_system/Provider/employee_acc_provider.dart';
+import 'package:ubuntu_system/Provider/pc_provider_provider_class.dart';
 import 'package:ubuntu_system/View/Screens/Intial/splash_screen.dart';
 import 'firebase_options.dart';
 
@@ -20,7 +22,13 @@ class MainApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(
           create: (context) => AuthenticationProvider(),
-        )
+        ),
+        ChangeNotifierProvider(
+          create: (context) => EmployeeAccProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => PCProviderClass(),
+        ),
       ],
       child: const MaterialApp(
         home: Scaffold(body: SplashScreen()),

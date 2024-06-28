@@ -1,9 +1,14 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/pc_provider_database_service.dart';
 import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
+import 'package:ubuntu_system/Provider/pc_provider_provider_class.dart';
 import 'package:ubuntu_system/View/Screens/PC%20Provider/Class/notification_item.dart';
+import 'package:ubuntu_system/View/Screens/PC%20Provider/pc_provider_tasks.dart';
 import 'package:ubuntu_system/View/Widgets/loading_animation.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -27,7 +32,7 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
     // Add more notifications here
   ];
 
-  bool showForm = false, showNotifiation = false;
+  bool showNotifiation = false;
   List<String> formStatusValues = [
     "Ready to onBoard",
     "onBoarded",
@@ -98,19 +103,69 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
     );
   }
 
+  void _logoutAction(BuildContext context, double deviceWidth) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Logout"),
+          content: Text(
+            "Are you sure you want to Logout?",
+            style: TextStyle(fontSize: deviceWidth * 0.04),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                FirebaseAuth.instance.signOut().then((value) {
+                  Navigator.pop(context);
+                });
+                Navigator.pop(context);
+              },
+              child: Text(
+                "Yes",
+                style: TextStyle(fontSize: deviceWidth * 0.055),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text(
+                "No",
+                style: TextStyle(fontSize: deviceWidth * 0.055),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   late PcProvider _pcProvider;
   bool loading = false;
+
+  late StreamSubscription getPcProviderSub;
 
   @override
   void initState() {
     super.initState();
     var authProv = context.read<AuthenticationProvider>().userVal;
-    PcProviderDatabaseService().getPcProvider(authProv!.uid).listen((event) {
+    var pcProv = context.read<PCProviderClass>();
+    getPcProviderSub = PcProviderDatabaseService()
+        .getPcProvider(authProv!.uid)
+        .listen((event) {
       _pcProvider = event[0];
+      pcProv.assignPcProvider(_pcProvider);
       setState(() {
         loading = true;
       });
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    getPcProviderSub.cancel();
   }
 
   @override
@@ -131,7 +186,6 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
             IconButton(
               icon: const Icon(Icons.notifications),
               onPressed: () {
-                // Handle notification icon tap (e.g., show a notification screen)
                 setState(() {
                   showNotifiation = !showNotifiation;
                 });
@@ -140,7 +194,7 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
             IconButton(
               icon: const Icon(Icons.exit_to_app),
               onPressed: () {
-                // Handle exit action
+                _logoutAction(context, deviceWidth);
               },
             ),
           ],
@@ -163,7 +217,13 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
                     ),
                     ListTile(
                       title: const Text('Tasks'),
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) {
+                            return const PCProviderTasks();
+                          },
+                        ));
+                      },
                     ),
                   ],
                 ),

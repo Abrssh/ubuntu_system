@@ -816,7 +816,8 @@ class _AccountCreationState extends State<AccountCreation> {
                                   child: ElevatedButton(
                                     onPressed: () async {
                                       if (_formKey.currentState!.validate()) {
-                                        debugPrint("Employee Creation");
+                                        debugPrint(
+                                            "Employee Creation ${_teamsuggestionController.text}");
                                         setState(() {
                                           loading = false;
                                         });
