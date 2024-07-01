@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:ubuntu_system/Provider/administrator_provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
 import 'package:ubuntu_system/Provider/employee_acc_provider.dart';
 import 'package:ubuntu_system/Provider/pc_provider_provider_class.dart';
@@ -28,6 +29,9 @@ class MainApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) => PCProviderClass(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => AdministratorProvider(),
         ),
       ],
       child: const MaterialApp(

@@ -5,6 +5,10 @@ import 'package:ubuntu_system/Data/Model/task.dart';
 class TaskDatabaseService {
   final CollectionReference taskCollection =
       FirebaseFirestore.instance.collection("task");
+  final CollectionReference pcProviderCollection =
+      FirebaseFirestore.instance.collection("pcProvider");
+  final CollectionReference employeeCollection =
+      FirebaseFirestore.instance.collection("employee");
 
   List<Task> _mapQuerSnapToTask(QuerySnapshot querySnapshot) {
     try {
@@ -34,17 +38,31 @@ class TaskDatabaseService {
     }
   }
 
-  Future<bool> createTask(Task task) {
+  Future<bool?> createTask(Task task) async {
     try {
-      return taskCollection.doc().set({
-        "pcProviderId": task.pcProviderId,
-        "employeeId": task.employeeId,
-        "outlierTaskId": task.outlierTaskId,
-        "payAmount": task.payAmount,
-        "createdDate": Timestamp.fromDate(task.createdDate),
-        "feedbackDate": Timestamp.fromDate(task.feedbackDate),
-        "feedback": task.feedback,
-      }).then((value) => true);
+      Map<String, bool> transactionReturn =
+          await FirebaseFirestore.instance.runTransaction((transaction) {
+        transaction.set(taskCollection.doc(), {
+          "pcProviderId": task.pcProviderId,
+          "employeeId": task.employeeId,
+          "outlierTaskId": task.outlierTaskId,
+          "payAmount": task.payAmount,
+          "createdDate": Timestamp.fromDate(task.createdDate),
+          "feedbackDate": Timestamp.fromDate(task.feedbackDate),
+          "feedback": task.feedback,
+        });
+        double amountForPc = task.payAmount * 0.4;
+        double amountForEmployee = task.payAmount * 0.17;
+        transaction.update(pcProviderCollection.doc(task.pcProviderId), {
+          "personalAmountEarned": FieldValue.increment(amountForPc),
+          "totalAmountEarned": FieldValue.increment(task.payAmount),
+        });
+        transaction.update(employeeCollection.doc(task.employeeId), {
+          "amountReceived": amountForEmployee,
+        });
+        return Future.value({"val": true});
+      });
+      return transactionReturn["val"];
     } catch (e) {
       debugPrint("CreateTask error: $e");
       return Future.value(false);

@@ -104,9 +104,11 @@ class _AccountCreationState extends State<AccountCreation> {
             .updateUserAccUid(authProv.uid, authProv.email!)
             .then(
           (value) {
-            setState(() {
-              loading = true;
-            });
+            if (mounted) {
+              setState(() {
+                loading = true;
+              });
+            }
             Navigator.push(context, MaterialPageRoute(
               builder: (context) {
                 return const AdministratorDashBoard();
@@ -469,6 +471,8 @@ class _AccountCreationState extends State<AccountCreation> {
                                         PcProvider pcProvider = PcProvider(
                                             uid: authProv!.uid,
                                             pcProviderDocId: "",
+                                            employeeId: "",
+                                            employeeName: "",
                                             firstName: firstName,
                                             lastName: lastName,
                                             birthDate: birthDate,
@@ -485,7 +489,9 @@ class _AccountCreationState extends State<AccountCreation> {
                                             team: "",
                                             zipCode: zipCode,
                                             formstatus: 0,
-                                            formHistory: {},
+                                            // formHistory: {},
+                                            lastUpdatedBy: "",
+                                            lastUpdatedOn: DateTime.now(),
                                             accountStatus: 0,
                                             totalAmountEarned: 0,
                                             personalAmountEarned: 0);
@@ -840,7 +846,9 @@ class _AccountCreationState extends State<AccountCreation> {
                                                 status: 0,
                                                 manager: false,
                                                 managerId: "",
+                                                managerName: "",
                                                 pcProviderId: "",
+                                                pcProviderName: "",
                                                 team: _teamsuggestionController
                                                     .text);
                                         UserAcc userAcc =

@@ -199,7 +199,7 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
                       title: Text(
                           "Name: ${pcProviders[index].firstName}, Acc Status: ${accountStatusValues[pcProviders[index].accountStatus]}"),
                       subtitle: Text(
-                          "Joined: ${pcProviders[index].createdDate}, Amount Earned: ${pcProviders[index].totalAmountEarned}"),
+                          "Joined: ${pcProviders[index].createdDate}, Amount Earned: ${pcProviders[index].totalAmountEarned}, Assigned To: ${pcProviders[index].employeeName != "" ? pcProviders[index].employeeName : "N/A"}"),
                       onTap: null,
                     ),
                   );

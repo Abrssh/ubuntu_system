@@ -5,22 +5,28 @@ import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 class PcProviderDatabaseService {
   final CollectionReference pcProviderCollection =
       FirebaseFirestore.instance.collection("pcProvider");
+  final CollectionReference employeeCollection =
+      FirebaseFirestore.instance.collection("employee");
 
   List<PcProvider> _mapQuerSnapToPcProvider(QuerySnapshot querySnapshot) {
     try {
-      // Used list so that i can use the try catch
       List<PcProvider> pcProviders = [];
+      // Used list so that i can use the try catch
       Timestamp timestamp1 = querySnapshot.docs.first.get("birthDate");
       Timestamp timestamp2 = querySnapshot.docs.first.get("createdDate");
+      Timestamp timestamp3 = querySnapshot.docs.first.get("lastUpdatedOn");
       DateTime birthDate = timestamp1.toDate();
       DateTime createdDate = timestamp2.toDate();
+      DateTime lastUpdatedOn = timestamp3.toDate();
 
-      Map<String, dynamic> formHistory =
-          querySnapshot.docs.first.get("formHistory");
-      debugPrint("Form History: $formHistory");
+      // Map<String, dynamic> formHistory =
+      //     querySnapshot.docs.first.get("formHistory");
+      // debugPrint("Form History: $formHistory");
       pcProviders.add(PcProvider(
           uid: querySnapshot.docs.first.get("uid"),
           pcProviderDocId: querySnapshot.docs.first.id,
+          employeeId: querySnapshot.docs.first.get("employeeId"),
+          employeeName: querySnapshot.docs.first.get("employeeName"),
           firstName: querySnapshot.docs.first.get("firstName"),
           lastName: querySnapshot.docs.first.get("lastName"),
           birthDate: birthDate,
@@ -35,7 +41,9 @@ class PcProviderDatabaseService {
           team: querySnapshot.docs.first.get("team"),
           zipCode: querySnapshot.docs.first.get("zipCode"),
           formstatus: querySnapshot.docs.first.get("formStatus"),
-          formHistory: {},
+          // formHistory: {},
+          lastUpdatedBy: querySnapshot.docs.first.get("lastUpdatedBy"),
+          lastUpdatedOn: lastUpdatedOn,
           accountStatus: int.parse(
               querySnapshot.docs.first.get("accountStatus").toString()),
           totalAmountEarned: double.parse(
@@ -57,14 +65,18 @@ class PcProviderDatabaseService {
       for (var docSnap in querySnapshot.docs) {
         Timestamp timestamp1 = docSnap.get("birthDate");
         Timestamp timestamp2 = docSnap.get("createdDate");
+        Timestamp timestamp3 = docSnap.get("lastUpdatedOn");
         DateTime birthDate = timestamp1.toDate();
         DateTime createdDate = timestamp2.toDate();
+        DateTime lastUpdatedOn = timestamp3.toDate();
 
-        Map<String, dynamic> formHistory = docSnap.get("formHistory");
-        debugPrint("Form History: $formHistory");
+        // Map<String, dynamic> formHistory = docSnap.get("formHistory");
+        // debugPrint("Form History: $formHistory");
         pcProviders.add(PcProvider(
             uid: docSnap.get("uid"),
             pcProviderDocId: docSnap.id,
+            employeeId: docSnap.get("employeeId"),
+            employeeName: docSnap.get("employeeName"),
             firstName: docSnap.get("firstName"),
             lastName: docSnap.get("lastName"),
             birthDate: birthDate,
@@ -79,7 +91,9 @@ class PcProviderDatabaseService {
             team: docSnap.get("team"),
             zipCode: docSnap.get("zipCode"),
             formstatus: docSnap.get("formStatus"),
-            formHistory: {},
+            // formHistory: {},
+            lastUpdatedBy: docSnap.get("lastUpdatedBy"),
+            lastUpdatedOn: lastUpdatedOn,
             accountStatus: int.parse(docSnap.get("accountStatus").toString()),
             totalAmountEarned:
                 double.parse(docSnap.get("totalAmountEarned").toString()),
@@ -97,6 +111,8 @@ class PcProviderDatabaseService {
     try {
       return pcProviderCollection.doc().set({
         "uid": pcProvider.uid,
+        "employeeId": pcProvider.employeeId,
+        "employeeName": pcProvider.employeeName,
         "firstName": pcProvider.firstName,
         "lastName": pcProvider.lastName,
         "birthDate": Timestamp.fromDate(pcProvider.birthDate),
@@ -110,7 +126,9 @@ class PcProviderDatabaseService {
         "team": pcProvider.team,
         "zipCode": pcProvider.zipCode,
         "formStatus": pcProvider.formstatus,
-        "formHistory": pcProvider.formHistory,
+        // "formHistory": pcProvider.formHistory,
+        "lastUpdatedBy": pcProvider.lastUpdatedBy,
+        "lastUpdatedOn": pcProvider.lastUpdatedOn,
         "accountStatus": pcProvider.accountStatus,
         "totalAmountEarned": pcProvider.totalAmountEarned,
         "personalAmountEarned": pcProvider.personalAmountEarned,
@@ -154,6 +172,51 @@ class PcProviderDatabaseService {
     } catch (e) {
       debugPrint("GetPcProvidersForTL: $e");
       return Stream.value([]);
+    }
+  }
+
+  Stream<List<PcProvider>> getPcProvidersForAdmin() {
+    try {
+      return pcProviderCollection
+          .snapshots()
+          .map(_mapQuerSnapToPcProvidersForTL);
+    } catch (e) {
+      debugPrint("GetPcProvidersForTL: $e");
+      return Stream.value([]);
+    }
+  }
+
+  Future<bool?> assignEmployee(String pcDocId, pcProviderName,
+      String employeeId, String employeeName) async {
+    try {
+      Map<String, bool> transactionReturn =
+          await FirebaseFirestore.instance.runTransaction((transaction) {
+        transaction.update(pcProviderCollection.doc(pcDocId),
+            {"employeeId": employeeId, "employeeName": employeeName});
+        transaction.update(employeeCollection.doc(employeeId), {
+          "pcProviderId": pcDocId,
+          "pcProviderName": pcProviderName,
+        });
+        return Future.value({"val": true});
+      });
+      return transactionReturn["val"];
+    } catch (e) {
+      debugPrint("AssignEmployee Error: $e");
+      return Future.value(false);
+    }
+  }
+
+  Future<bool> updateFormStatus(
+      String pcProvDocId, int formStatus, String updaterId) {
+    try {
+      return pcProviderCollection.doc(pcProvDocId).update({
+        "formStatus": formStatus,
+        "lastUpdateBy": updaterId,
+        "lastUpdatedOn": Timestamp.now()
+      }).then((value) => true);
+    } catch (e) {
+      debugPrint("UpdateFormStatus: $e");
+      return Future.value(false);
     }
   }
 }

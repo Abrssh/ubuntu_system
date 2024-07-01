@@ -31,7 +31,9 @@ class EmployeeDatabaseService {
           status: int.parse(querySnapshot.docs.first.get("status").toString()),
           manager: querySnapshot.docs.first.get("manager"),
           managerId: querySnapshot.docs.first.get("managerId"),
+          managerName: querySnapshot.docs.first.get("managerName"),
           pcProviderId: querySnapshot.docs.first.get("pcProviderId"),
+          pcProviderName: querySnapshot.docs.first.get("pcProviderName"),
           team: querySnapshot.docs.first.get("team")));
       return employees;
     } catch (e) {
@@ -66,7 +68,9 @@ class EmployeeDatabaseService {
             status: int.parse(docSnap.get("status").toString()),
             manager: docSnap.get("manager"),
             managerId: docSnap.get("managerId"),
+            managerName: docSnap.get("managerName"),
             pcProviderId: docSnap.get("pcProviderId"),
+            pcProviderName: docSnap.get("pcProviderName"),
             team: docSnap.get("team")));
       }
 
@@ -92,7 +96,9 @@ class EmployeeDatabaseService {
         "status": employeeAccount.status,
         "team": employeeAccount.team,
         "pcProviderId": employeeAccount.pcProviderId,
+        "pcProviderName": employeeAccount.pcProviderName,
         "managerId": employeeAccount.managerId,
+        "managerName": employeeAccount.managerName,
         "manager": employeeAccount.manager,
         "amountReceived": employeeAccount.amountReceived,
         "createdDate": Timestamp.fromDate(employeeAccount.createdDate)
@@ -121,6 +127,46 @@ class EmployeeDatabaseService {
     } catch (e) {
       debugPrint("GetEmployeesForTL: $e");
       return Stream.value([]);
+    }
+  }
+
+  Stream<List<EmployeeAccount>> getEmployeesForAdmin() {
+    try {
+      return employeeCollection.snapshots().map(_mapQuerSnapToEmployeeForTL);
+    } catch (e) {
+      debugPrint("GetEmployeesForTL: $e");
+      return Stream.value([]);
+    }
+  }
+
+  Future<bool?> assignEmployeeManager(String employeeId, String managerName,
+      bool isManager, List<String> employeesAssignedToManager) async {
+    try {
+      Map<String, bool> transactionReturn =
+          await FirebaseFirestore.instance.runTransaction((transaction) async {
+        QuerySnapshot employeeQuerSnap = await employeeCollection
+            .where("managerId", isEqualTo: employeeId)
+            .get();
+
+        transaction
+            .update(employeeCollection.doc(employeeId), {"manager": isManager});
+        if (isManager) {
+          for (var assignedEmployeeId in employeesAssignedToManager) {
+            transaction.update(employeeCollection.doc(assignedEmployeeId),
+                {"managerId": employeeId, "managerName": managerName});
+          }
+        } else {
+          for (var docSnap in employeeQuerSnap.docs) {
+            transaction.update(employeeCollection.doc(docSnap.id),
+                {"managerId": "", "managerName": ""});
+          }
+        }
+        return Future.value({"val": true});
+      });
+      return transactionReturn["val"];
+    } catch (e) {
+      debugPrint("AssignEmployeeManager error: $e");
+      return Future.value(false);
     }
   }
 }

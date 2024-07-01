@@ -1,6 +1,8 @@
 class PcProvider {
   final String uid,
       pcProviderDocId,
+      employeeId,
+      employeeName,
       firstName,
       lastName,
       govtId,
@@ -12,19 +14,23 @@ class PcProvider {
       phoneNumber,
       team;
 
-  final DateTime birthDate, createdDate;
+  final DateTime birthDate, createdDate, lastUpdatedOn;
 
   // accountstatus 0 EQ, 1 teamviewer disconnected, 2 verify email and 3 active/tasking
   // form status 0 Ready to onboard, 1 onboarded, 2 ready to apply, 3 applied, 4 ready to setup and 5 ready to be active
-  final int zipCode, formstatus, accountStatus;
+  int zipCode, formstatus, accountStatus;
   final double totalAmountEarned, personalAmountEarned;
 
   // int = form status and dynamic equals [manager/adminstrator id, datetime]
-  final Map<int, Map<String, DateTime>> formHistory;
+  // final Map<int, Map<String, DateTime>> formHistory;
+
+  final String lastUpdatedBy;
 
   PcProvider(
       {required this.uid,
       required this.pcProviderDocId,
+      required this.employeeId,
+      required this.employeeName,
       required this.firstName,
       required this.lastName,
       required this.birthDate,
@@ -39,7 +45,8 @@ class PcProvider {
       required this.team,
       required this.zipCode,
       required this.formstatus,
-      required this.formHistory,
+      required this.lastUpdatedBy,
+      required this.lastUpdatedOn,
       required this.accountStatus,
       required this.totalAmountEarned,
       required this.personalAmountEarned});

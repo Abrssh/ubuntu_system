@@ -121,7 +121,7 @@ class _AddTaskState extends State<AddTask> {
                                 TaskDatabaseService()
                                     .createTask(task)
                                     .then((value) {
-                                  if (value) {
+                                  if (value!) {
                                     setState(() {
                                       loading = true;
                                     });

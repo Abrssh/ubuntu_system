@@ -10,8 +10,10 @@ class EmployeeAccount {
       phoneNumber,
       team,
       pcProviderId,
-      managerId;
-  final bool manager;
+      pcProviderName,
+      managerId,
+      managerName;
+  bool manager;
   // 0 has pc provider, 1 has no pc provider
   final int status;
   final double amountReceived;
@@ -34,6 +36,8 @@ class EmployeeAccount {
       required this.status,
       required this.manager,
       required this.managerId,
+      required this.managerName,
       required this.pcProviderId,
+      required this.pcProviderName,
       required this.team});
 }
