@@ -92,4 +92,26 @@ class TaskDatabaseService {
       return Future.value([]);
     }
   }
+
+  Future<bool> assignFeedbackToTask(
+      String outlierTaskId, String pcProvDocId, int feedback) async {
+    try {
+      QuerySnapshot findTaskQuerSnap = await taskCollection
+          .where("pcProviderId", isEqualTo: pcProvDocId)
+          .where("outlierTaskId", isEqualTo: outlierTaskId)
+          .get();
+      if (findTaskQuerSnap.docs.isNotEmpty) {
+        String docId = findTaskQuerSnap.docs.first.id;
+        return taskCollection.doc(docId).update({
+          "feedback": feedback,
+          "feedbackDate": Timestamp.now()
+        }).then((value) => true);
+      } else {
+        return Future.value(false);
+      }
+    } catch (e) {
+      debugPrint("AssignFeedbackToTask error: $e");
+      return Future.value(false);
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 
 class PcProviderDatabaseService {
@@ -7,6 +8,9 @@ class PcProviderDatabaseService {
       FirebaseFirestore.instance.collection("pcProvider");
   final CollectionReference employeeCollection =
       FirebaseFirestore.instance.collection("employee");
+
+  DateFormat dateFormat = DateFormat("yMd");
+  DateFormat timeFormat = DateFormat("jm");
 
   List<PcProvider> _mapQuerSnapToPcProvider(QuerySnapshot querySnapshot) {
     try {
@@ -190,7 +194,15 @@ class PcProviderDatabaseService {
       String employeeId, String employeeName) async {
     try {
       Map<String, bool> transactionReturn =
-          await FirebaseFirestore.instance.runTransaction((transaction) {
+          await FirebaseFirestore.instance.runTransaction((transaction) async {
+        QuerySnapshot querySnapshot = await employeeCollection
+            .where("pcProviderId", isEqualTo: pcDocId)
+            .get();
+        transaction
+            .update(employeeCollection.doc(querySnapshot.docs.first.id), {
+          "pcProviderId": "",
+          "pcProviderName": "",
+        });
         transaction.update(pcProviderCollection.doc(pcDocId),
             {"employeeId": employeeId, "employeeName": employeeName});
         transaction.update(employeeCollection.doc(employeeId), {
@@ -211,11 +223,22 @@ class PcProviderDatabaseService {
     try {
       return pcProviderCollection.doc(pcProvDocId).update({
         "formStatus": formStatus,
-        "lastUpdateBy": updaterId,
+        "lastUpdatedBy": updaterId,
         "lastUpdatedOn": Timestamp.now()
       }).then((value) => true);
     } catch (e) {
       debugPrint("UpdateFormStatus: $e");
+      return Future.value(false);
+    }
+  }
+
+  Future<bool> updatePcAccountStatus(String pcProvDocId, int status) {
+    try {
+      return pcProviderCollection
+          .doc(pcProvDocId)
+          .update({"accountStatus": status}).then((value) => true);
+    } catch (e) {
+      debugPrint("UpdatePcAccountStatus: $e");
       return Future.value(false);
     }
   }

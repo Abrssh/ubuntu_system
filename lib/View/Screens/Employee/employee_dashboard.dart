@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/employee_database_service.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/pc_provider_database_service.dart';
@@ -92,8 +93,9 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
       _employeeAccount = event[0];
       employProv.assignEmployeeAcc(_employeeAccount);
       if (_employeeAccount.manager) {
-        getEmployeesForTlSub =
-            EmployeeDatabaseService().getEmployeesForTL().listen((event) {
+        getEmployeesForTlSub = EmployeeDatabaseService()
+            .getEmployeesForTL(_employeeAccount.employeeDocId)
+            .listen((event) {
           debugPrint("Emps: ${event.length}");
           employeeAccounts.clear();
           employeeAccounts.addAll(event);
@@ -101,6 +103,18 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
               PcProviderDatabaseService().getPcProvidersForTL().listen((event) {
             pcProviders.clear();
             pcProviders.addAll(event);
+            pcProviders.removeWhere(
+              (element) {
+                bool exist = false;
+                for (var employee in employeeAccounts) {
+                  if (employee.employeeDocId == element.employeeId) {
+                    exist = true;
+                    break;
+                  }
+                }
+                return exist;
+              },
+            );
             setState(() {
               loading = true;
             });
@@ -167,7 +181,7 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
                       title: Text(
                           "Name: ${employeeAccounts[index].firstName}  Income Earned: ${employeeAccounts[index].amountReceived}"),
                       subtitle: Text(
-                          "Joined:${employeeAccounts[index].createdDate}, TL:${employeeAccounts[index].managerId != "" ? employeeAccounts[index].managerId : "N/A"}, PC assigned: ${employeeAccounts[index].pcProviderId != "" ? employeeAccounts[index].pcProviderId : "N/A"}"),
+                          "Joined:${DateFormat.yMd(employeeAccounts[index].createdDate)}, TL:${employeeAccounts[index].managerId != "" ? employeeAccounts[index].managerName : "N/A"}, PC assigned: ${employeeAccounts[index].pcProviderId != "" ? employeeAccounts[index].pcProviderName : "N/A"}"),
                       onTap: null,
                     ),
                   );
@@ -199,7 +213,7 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
                       title: Text(
                           "Name: ${pcProviders[index].firstName}, Acc Status: ${accountStatusValues[pcProviders[index].accountStatus]}"),
                       subtitle: Text(
-                          "Joined: ${pcProviders[index].createdDate}, Amount Earned: ${pcProviders[index].totalAmountEarned}, Assigned To: ${pcProviders[index].employeeName != "" ? pcProviders[index].employeeName : "N/A"}"),
+                          "Joined: ${DateFormat.yMd(pcProviders[index].createdDate)}, Amount Earned: ${pcProviders[index].totalAmountEarned}, Assigned To: ${pcProviders[index].employeeName != "" ? pcProviders[index].employeeName : "N/A"}"),
                       onTap: null,
                     ),
                   );
@@ -276,7 +290,8 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
                           SizedBox(
                             width: deviceWidth * 0.01,
                           ),
-                          Text('${_employeeAccount.amountReceived} \$',
+                          Text(
+                              '${_employeeAccount.amountReceived.toStringAsFixed(2)} \$',
                               style: TextStyle(
                                   fontSize: deviceWidth * 0.07,
                                   fontWeight: FontWeight.w500)),
@@ -300,7 +315,7 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
                               ),
                               Text(
                                   _employeeAccount.pcProviderId != ""
-                                      ? _employeeAccount.pcProviderId
+                                      ? _employeeAccount.pcProviderName
                                       : "not assigned",
                                   style: TextStyle(
                                       fontSize: deviceWidth * 0.045,
@@ -317,14 +332,59 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
                               SizedBox(
                                 width: deviceWidth * 0.01,
                               ),
-                              Text(
-                                  employeeAssignedPCAccountStatus >= 0
-                                      ? accountStatusValues[
-                                          employeeAssignedPCAccountStatus]
-                                      : "N/A",
-                                  style: TextStyle(
-                                      fontSize: deviceWidth * 0.045,
-                                      fontWeight: FontWeight.w400)),
+                              _employeeAccount.pcProviderId != ""
+                                  ? DropdownButton<String>(
+                                      value: accountStatusValues[
+                                          employeeAssignedPCAccountStatus],
+                                      onChanged: (value) {
+                                        setState(() {
+                                          loading = false;
+                                        });
+                                        int newIndex =
+                                            accountStatusValues.indexWhere(
+                                                (element) => element == value);
+                                        PcProviderDatabaseService()
+                                            .updatePcAccountStatus(
+                                                _employeeAccount.pcProviderId,
+                                                newIndex)
+                                            .then((value) {
+                                          setState(() {
+                                            loading = true;
+                                          });
+                                          if (value) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(const SnackBar(
+                                              content: Text(
+                                                  'Account Status Updated Successfully'),
+                                              backgroundColor: Colors.green,
+                                            ));
+                                          } else {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(const SnackBar(
+                                              content: Text(
+                                                  'Account Status Failed To Update'),
+                                              backgroundColor: Colors.red,
+                                            ));
+                                          }
+                                        });
+                                      },
+                                      items: accountStatusValues
+                                          .map<DropdownMenuItem<String>>(
+                                              (String value) {
+                                        return DropdownMenuItem<String>(
+                                          value: value,
+                                          child: Text(value),
+                                        );
+                                      }).toList(),
+                                    )
+                                  : Text(
+                                      employeeAssignedPCAccountStatus >= 0
+                                          ? accountStatusValues[
+                                              employeeAssignedPCAccountStatus]
+                                          : "N/A",
+                                      style: TextStyle(
+                                          fontSize: deviceWidth * 0.045,
+                                          fontWeight: FontWeight.w400)),
                             ],
                           ),
                         ],

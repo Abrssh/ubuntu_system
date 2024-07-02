@@ -8,6 +8,7 @@ import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
 import 'package:ubuntu_system/Provider/pc_provider_provider_class.dart';
 import 'package:ubuntu_system/View/Screens/PC%20Provider/Class/notification_item.dart';
+import 'package:ubuntu_system/View/Screens/PC%20Provider/pc_prov_assign_feedback_page.dart';
 import 'package:ubuntu_system/View/Screens/PC%20Provider/pc_provider_tasks.dart';
 import 'package:ubuntu_system/View/Widgets/loading_animation.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -216,11 +217,23 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
                       },
                     ),
                     ListTile(
+                      leading: const Icon(Icons.task),
                       title: const Text('Tasks'),
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(
                           builder: (context) {
                             return const PCProviderTasks();
+                          },
+                        ));
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.feedback),
+                      title: const Text('Assign Feedback'),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) {
+                            return const PCProvAssignFeedbackPage();
                           },
                         ));
                       },

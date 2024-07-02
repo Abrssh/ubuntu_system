@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/task_database_service.dart';
 import 'package:ubuntu_system/Data/Model/task.dart';
@@ -58,9 +59,10 @@ class _PCProviderTasksState extends State<PCProviderTasks> {
                           Text('Employee ID: ${task.employeeId}'),
                           Text(
                               'Amount Earned: \$${task.payAmount.toStringAsFixed(2)}'),
-                          Text('Created Date: ${task.createdDate.toString()}'),
                           Text(
-                              'Feedback Date: ${task.feedbackDate.toString()}'),
+                              'Created Date: ${DateFormat.yMd(task.createdDate)}'),
+                          Text(
+                              'Feedback Date: ${DateFormat.yMd(task.feedbackDate)}'),
                           Text('Feedback: ${task.feedback}'),
                         ],
                       ),

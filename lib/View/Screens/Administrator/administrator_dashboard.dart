@@ -11,6 +11,7 @@ import 'package:ubuntu_system/Data/Model/administrator.dart';
 import 'package:ubuntu_system/Data/Model/employee_account.dart';
 import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
+import 'package:ubuntu_system/View/Screens/Administrator/add_onboarding_manager.dart';
 import 'package:ubuntu_system/View/Widgets/loading_animation.dart';
 
 class AdministratorDashBoard extends StatefulWidget {
@@ -104,49 +105,67 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
   List<PcProvider> filteredForms = [];
   int filterIndex = 0;
 
+  DateFormat dateFormat = DateFormat("yMd");
+
   @override
   void initState() {
     super.initState();
-    var authProv = context.read<AuthenticationProvider>().userVal!;
-    AdministratorDatabaseService()
-        .getAdministrator(authProv.email!)
-        .then((value) {
-      _administrator = value[0];
-      getEmployeesForAdSub =
-          EmployeeDatabaseService().getEmployeesForTL().listen((empEvent) {
-        debugPrint("Emps: ${empEvent.length}");
-        employeeAccounts.clear();
-        employeeAccounts.addAll(empEvent);
-        employeeNames.clear();
-        checkBoxValues.clear();
-        List<bool> tempCheckBoxVals = [];
-        for (var employee in employeeAccounts) {
-          employeeNames.add(employee.firstName + employee.email);
-          tempCheckBoxVals.add(false);
-        }
-        for (var i = 0; i < employeeAccounts.length; i++) {
-          checkBoxValues[i].addAll(tempCheckBoxVals);
-        }
-        getPcProviderForAdmSub =
-            PcProviderDatabaseService().getPcProvidersForTL().listen((pcEvent) {
-          pcProviders.clear();
-          forms.clear();
-          for (var pcProv in pcEvent) {
-            pcProviders.add(pcProv);
-            forms.add(pcProv);
-            filteredForms.add(pcProv);
+    try {
+      var authProv = context.read<AuthenticationProvider>().userVal!;
+      AdministratorDatabaseService()
+          .getAdministrator(authProv.email!)
+          .then((value) {
+        _administrator = value[0];
+        getEmployeesForAdSub =
+            EmployeeDatabaseService().getEmployeesForAdmin().listen((empEvent) {
+          debugPrint("Emps: ${empEvent.length}");
+          employeeAccounts.clear();
+          employeeAccounts.addAll(empEvent);
+          employeeNames.clear();
+          checkBoxValues.clear();
+          for (var employee in employeeAccounts) {
+            employeeNames.add("${employee.firstName} / ${employee.email}");
           }
-          debugPrint("Forms leng: ${forms.length} : ${pcProviders.length}");
-          // inludes only pc providers that are in the onboarding stages
-          forms.removeWhere((element) => element.formstatus == 5);
-          pcProviders.removeWhere((element) => element.formstatus < 5);
-          debugPrint("Forms leng: ${forms.length} : ${pcProviders.length}");
-          setState(() {
-            loading = true;
+          for (var i = 0; i < employeeAccounts.length; i++) {
+            List<bool> tempCheckBoxVals = [];
+            for (var j = 0; j < employeeAccounts.length; j++) {
+              tempCheckBoxVals.add(employeeAccounts[j].managerId ==
+                  employeeAccounts[i].employeeDocId);
+            }
+            checkBoxValues.add(tempCheckBoxVals);
+          }
+          // debugPrint("TempChBoxVals: $checkBoxValues");
+          getPcProviderForAdmSub = PcProviderDatabaseService()
+              .getPcProvidersForAdmin()
+              .listen((pcEvent) {
+            pcProviders.clear();
+            forms.clear();
+            filteredForms.clear();
+            for (PcProvider pcProv in pcEvent) {
+              pcProviders.add(pcProv);
+              forms.add(pcProv);
+            }
+            // debugPrint("Forms leng: ${forms.length} : ${pcProviders.length}");
+            // inludes only pc providers that are in the onboarding stages
+            forms.removeWhere((element) => element.formstatus == 5);
+            filteredForms.addAll(forms);
+            pcProviders.removeWhere((element) => element.formstatus < 5);
+            debugPrint("Forms leng: ${forms.length} : ${pcProviders.length}");
+            setState(() {
+              loading = true;
+            });
           });
         });
       });
-    });
+      // Timer.periodic(const Duration(seconds: 1), (timer) {
+      //   debugPrint("TempChBoxVals: ${checkBoxValues}");
+      //   for (var emp in employeeAccounts) {
+      //     debugPrint("Emp: ${emp.manager} ${emp.firstName}");
+      //   }
+      // });
+    } catch (e) {
+      debugPrint("Admin Init State Error: $e");
+    }
   }
 
   @override
@@ -158,482 +177,67 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
 
   @override
   Widget build(BuildContext context) {
-    final double deviceHeight = MediaQuery.of(context).size.height;
-    final double deviceWidth = MediaQuery.of(context).size.width;
-    debugPrint("Administration Dashboard");
+    try {
+      final double deviceHeight = MediaQuery.of(context).size.height;
+      final double deviceWidth = MediaQuery.of(context).size.width;
+      debugPrint("Administration Dashboard");
 
-    final tabs = [
-      SizedBox(
-        width: deviceWidth,
-        height: deviceHeight * 0.79,
-        child: Column(
-          children: [
-            const Text("Employees"),
-            SizedBox(
-              height: deviceWidth * 0.03,
-            ),
-            SizedBox(
-              height: deviceHeight * 0.7,
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: SizedBox(
-                              height: deviceHeight * 0.055,
-                              child: const Icon(Icons.person)),
-                          title: Text(
-                              "Name: ${employeeAccounts[index].firstName}  Income Earned: ${employeeAccounts[index].amountReceived}"),
-                          subtitle: Text(
-                              "Joined:${DateFormat.yMd(employeeAccounts[index].createdDate)}, TL:${employeeAccounts[index].managerId != "" ? employeeAccounts[index].managerName : "N/A"}, PC assigned: ${employeeAccounts[index].pcProviderId != "" ? employeeAccounts[index].pcProviderName : "N/A"}"),
-                          onTap: null,
-                        ),
-                        SizedBox(
-                          height: deviceHeight * 0.02,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            Text(
-                              "Assign Role: ",
-                              style: TextStyle(fontSize: deviceWidth * 0.04),
-                            ),
-                            DropdownButton<String>(
-                              value: employeeAccounts[index].manager
-                                  ? managerDropDownVals[0]
-                                  : managerDropDownVals[1],
-                              onChanged: (value) {
-                                setState(() {
-                                  index = managerDropDownVals.indexWhere(
-                                      (element) => element == value);
-                                  if (index == 0) {
-                                    employeeAccounts[index].manager = true;
-                                  } else {
-                                    employeeAccounts[index].manager = false;
-                                  }
-                                });
-                              },
-                              items: managerDropDownVals
-                                  .map<DropdownMenuItem<String>>(
-                                      (String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: deviceHeight * 0.02,
-                        ),
-                        employeeAccounts[index].manager
-                            ? Column(
-                                children: [
-                                  Text(
-                                    "Select Employees For this Manager",
-                                    style: TextStyle(
-                                        fontSize: deviceWidth * 0.07,
-                                        fontWeight: FontWeight.w300),
-                                  ),
-                                  SizedBox(
-                                    height: deviceHeight * 0.3,
-                                    // color: Colors.amber,
-                                    child: SingleChildScrollView(
-                                      child: SizedBox(
-                                        height: deviceHeight * 0.3,
-                                        child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              ListView.builder(
-                                                itemCount:
-                                                    employeeAccounts.length,
-                                                itemBuilder: (context, index2) {
-                                                  return Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            8.0),
-                                                    child: Card(
-                                                      clipBehavior:
-                                                          Clip.hardEdge,
-                                                      elevation: 8,
-                                                      child: CheckboxListTile(
-                                                          controlAffinity:
-                                                              ListTileControlAffinity
-                                                                  .leading,
-                                                          title: Text(
-                                                            (employeeAccounts[index].firstName +
-                                                                            employeeAccounts[index]
-                                                                                .email)
-                                                                        .length <
-                                                                    20
-                                                                ? (employeeAccounts[
-                                                                            index]
-                                                                        .firstName +
-                                                                    employeeAccounts[
-                                                                            index]
-                                                                        .email)
-                                                                : "${(employeeAccounts[index].firstName + employeeAccounts[index].email).substring(0, 20)}...",
-                                                            style: TextStyle(
-                                                                color: checkBoxValues[
-                                                                            index]
-                                                                        [index2]
-                                                                    ? Colors
-                                                                        .white
-                                                                    : Colors
-                                                                        .black),
-                                                          ),
-                                                          tileColor:
-                                                              Colors.white,
-                                                          selectedTileColor:
-                                                              Colors.green,
-                                                          checkColor:
-                                                              Colors.white,
-                                                          activeColor:
-                                                              Colors.green,
-                                                          selected:
-                                                              checkBoxValues[
-                                                                      index]
-                                                                  [index2],
-                                                          value: checkBoxValues[
-                                                              index][index2],
-                                                          onChanged: (value) {
-                                                            setState(() {
-                                                              checkBoxValues[
-                                                                          index]
-                                                                      [index2] =
-                                                                  value!;
-                                                            });
-                                                          }),
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                            ]),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : const SizedBox(
-                                height: 0,
-                              ),
-                        SizedBox(
-                          height: deviceHeight * 0.02,
-                        ),
-                        ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                loading = false;
-                              });
-                              if (employeeAccounts[index].manager) {
-                                List<String> employeesAddedTothisManag = [];
-                                for (var i = 0;
-                                    i < checkBoxValues[index].length;
-                                    i++) {
-                                  if (checkBoxValues[index][i]) {
-                                    employeesAddedTothisManag
-                                        .add(employeeAccounts[i].employeeDocId);
-                                  }
-                                }
-                                if (employeesAddedTothisManag.isNotEmpty) {
-                                  EmployeeDatabaseService()
-                                      .assignEmployeeManager(
-                                          employeeAccounts[index].employeeDocId,
-                                          employeeAccounts[index].firstName,
-                                          employeeAccounts[index].manager,
-                                          employeesAddedTothisManag)
-                                      .then((value) {
-                                    setState(() {
-                                      loading = true;
-                                    });
-                                    if (value!) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                        content: Text(
-                                            'Manager Assigned Successfully'),
-                                        backgroundColor: Colors.green,
-                                      ));
-                                    } else {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                        content: Text(
-                                            'Manager Failed to be Assigned'),
-                                        backgroundColor: Colors.red,
-                                      ));
-                                    }
-                                  });
-                                } else {
-                                  ScaffoldMessenger.of(context)
-                                      .showSnackBar(const SnackBar(
-                                    content: Text(
-                                        'You did not assign employees for the manager'),
-                                    backgroundColor: Colors.red,
-                                  ));
-                                }
-                              } else {
-                                EmployeeDatabaseService().assignEmployeeManager(
-                                    employeeAccounts[index].employeeDocId,
-                                    employeeAccounts[index].firstName,
-                                    employeeAccounts[index].manager,
-                                    []).then((value) {
-                                  setState(() {
-                                    loading = true;
-                                  });
-                                  if (value!) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text(
-                                          'Employee Role Assigned Successfully'),
-                                      backgroundColor: Colors.green,
-                                    ));
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text(
-                                          'Employee Role Failed to be Assigned'),
-                                      backgroundColor: Colors.red,
-                                    ));
-                                  }
-                                });
-                              }
-                            },
-                            child: Text("Submit",
-                                style: TextStyle(fontSize: deviceWidth * 0.04)))
-                      ],
-                    ),
-                  );
-                },
-                itemCount: employeeAccounts.length,
+      final tabs = [
+        SizedBox(
+          width: deviceWidth,
+          height: deviceHeight * 0.79,
+          child: Column(
+            children: [
+              const Text("Employees"),
+              SizedBox(
+                height: deviceWidth * 0.03,
               ),
-            ),
-          ],
-        ),
-      ),
-      SizedBox(
-        width: deviceWidth,
-        height: deviceHeight * 0.79,
-        child: Column(
-          children: [
-            const Text("PC Providers"),
-            SizedBox(
-              height: deviceWidth * 0.03,
-            ),
-            SizedBox(
-              height: deviceHeight * 0.7,
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: SizedBox(
-                          height: deviceHeight * 0.055,
-                          child: const Icon(Icons.computer)),
-                      title: Text(
-                          "Name: ${pcProviders[index].firstName}, Acc Status: ${accountStatusValues[pcProviders[index].accountStatus]}"),
-                      subtitle: Column(
+              SizedBox(
+                height: deviceHeight * 0.7,
+                child: ListView.builder(
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: Column(
                         children: [
-                          Text(
-                              "Team: ${pcProviders[index].team} Joined: ${DateFormat.yMd(pcProviders[index].createdDate)}, Amount Earned: ${pcProviders[index].totalAmountEarned} Assigned To: ${pcProviders[index].employeeName != "" ? pcProviders[index].employeeName : "N/A"}"),
-                          SizedBox(
-                            height: deviceHeight * 0.03,
-                          ),
-                          RawAutocomplete<String>(
-                            optionsBuilder:
-                                (TextEditingValue textEditingValue) {
-                              return getEmployee(textEditingValue.text);
-                            },
-                            fieldViewBuilder: (BuildContext context,
-                                TextEditingController textEditingController,
-                                FocusNode focusNode,
-                                VoidCallback onFieldSubmitted) {
-                              _employeeSuggestionController.text =
-                                  textEditingController.text;
-                              return TextFormField(
-                                controller: textEditingController,
-                                focusNode: focusNode,
-                                onFieldSubmitted: (String value) {
-                                  onFieldSubmitted();
-                                },
-                                decoration: const InputDecoration(
-                                  iconColor: Colors.white,
-                                  labelText: 'Assign To: ',
-                                  border: OutlineInputBorder(),
-                                ),
-                              );
-                            },
-                            optionsViewBuilder: (BuildContext context,
-                                AutocompleteOnSelected<String> onSelected,
-                                Iterable<String> options) {
-                              return Align(
-                                alignment: Alignment.topLeft,
-                                child: Material(
-                                  elevation: 4.0,
-                                  child: SizedBox(
-                                    height: 100,
-                                    width: 300,
-                                    child: ListView.builder(
-                                      padding: const EdgeInsets.all(8.0),
-                                      itemCount: options.length,
-                                      itemBuilder:
-                                          (BuildContext context, int index) {
-                                        final String option =
-                                            options.elementAt(index);
-                                        return GestureDetector(
-                                          onTap: () {
-                                            onSelected(option);
-                                          },
-                                          child: ListTile(
-                                            title: Text(option),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                          ListTile(
+                            leading: SizedBox(
+                                height: deviceHeight * 0.055,
+                                child: const Icon(Icons.person)),
+                            title: Text(
+                                "Name: ${employeeAccounts[index].firstName}  Income Earned: ${employeeAccounts[index].amountReceived} \$"),
+                            subtitle: Text(
+                                "Joined: ${dateFormat.format(employeeAccounts[index].createdDate)}, TL:${employeeAccounts[index].managerId != "" ? employeeAccounts[index].managerName : "N/A"}, PC assigned: ${employeeAccounts[index].pcProviderId != "" ? employeeAccounts[index].pcProviderName : "N/A"}"),
+                            onTap: null,
                           ),
                           SizedBox(
-                            height: deviceHeight * 0.03,
+                            height: deviceHeight * 0.02,
                           ),
-                          ElevatedButton(
-                              onPressed: _employeeSuggestionController.text !=
-                                      ""
-                                  ? () {
-                                      int employeeIndex =
-                                          employeeNames.indexWhere((element) =>
-                                              element ==
-                                              _employeeSuggestionController
-                                                  .text);
-                                      if (employeeIndex != -1) {
-                                        setState(() {
-                                          loading = false;
-                                        });
-                                        PcProviderDatabaseService()
-                                            .assignEmployee(
-                                          pcProviders[index].pcProviderDocId,
-                                          pcProviders[index].firstName +
-                                              pcProviders[index].lastName,
-                                          employeeAccounts[employeeIndex]
-                                              .employeeDocId,
-                                          employeeNames[employeeIndex],
-                                        )
-                                            .then((value) {
-                                          setState(() {
-                                            loading = true;
-                                          });
-                                          if (value!) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(const SnackBar(
-                                              content: Text(
-                                                  'Employee Assigned Successfully'),
-                                              backgroundColor: Colors.green,
-                                            ));
-                                          } else {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(const SnackBar(
-                                              content: Text(
-                                                  'Failed To Assign Employee'),
-                                              backgroundColor: Colors.red,
-                                            ));
-                                          }
-                                        });
-                                      } else {}
-                                    }
-                                  : null,
-                              child: Text("Submit",
-                                  style:
-                                      TextStyle(fontSize: deviceWidth * 0.04)))
-                        ],
-                      ),
-                      onTap: null,
-                    ),
-                  );
-                },
-                itemCount: pcProviders.length,
-              ),
-            ),
-          ],
-        ),
-      ),
-      SizedBox(
-        width: deviceWidth,
-        height: deviceHeight * 0.79,
-        child: Column(
-          children: [
-            const Text("Forms"),
-            SizedBox(
-              height: deviceHeight * 0.02,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(
-                  "Filter Based On: ",
-                  style: TextStyle(fontSize: deviceWidth * 0.04),
-                ),
-                DropdownButton<String>(
-                  value: formStatusValues[filterIndex],
-                  onChanged: (value) {
-                    setState(() {
-                      filterIndex = formStatusValues
-                          .indexWhere((element) => element == value);
-                    });
-                    filteredForms.clear();
-                    for (var form in forms) {
-                      if (form.formstatus == filterIndex) {
-                        filteredForms.add(form);
-                      }
-                    }
-                  },
-                  items: formStatusValues
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: deviceHeight * 0.03,
-            ),
-            SizedBox(
-              height: deviceHeight * 0.7,
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: SizedBox(
-                          height: deviceHeight * 0.055,
-                          child: const Icon(Icons.computer)),
-                      title: Text(
-                          "Name: ${filteredForms[index].firstName} ${filteredForms[index].lastName}, Form Status: ${formStatusValues[filteredForms[index].formstatus]}"),
-                      subtitle: Column(
-                        children: [
-                          Text(
-                              "Joined: ${filteredForms[index].createdDate}) email: ${filteredForms[index].email}, phoneNumber: ${filteredForms[index].phoneNumber}, birthDate: ${filteredForms[index].birthDate.toString()}, Govt ID: ${filteredForms[index].govtId}, Country: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
                               Text(
-                                "Update Form Status: ",
+                                "Assign Role: ",
                                 style: TextStyle(fontSize: deviceWidth * 0.04),
                               ),
                               DropdownButton<String>(
-                                value: formStatusValues[
-                                    filteredForms[index].formstatus],
+                                value: employeeAccounts[index].manager
+                                    ? managerDropDownVals[0]
+                                    : managerDropDownVals[1],
                                 onChanged: (value) {
                                   setState(() {
-                                    filteredForms[index].formstatus =
-                                        formStatusValues.indexWhere(
+                                    int newIndex =
+                                        managerDropDownVals.indexWhere(
                                             (element) => element == value);
+                                    if (newIndex == 0) {
+                                      employeeAccounts[index].manager = true;
+                                    } else {
+                                      employeeAccounts[index].manager = false;
+                                    }
                                   });
+                                  // debugPrint(
+                                  //     "Ma: ${employeeAccounts[index].manager} ${employeeAccounts[index].firstName}");
                                 },
-                                items: formStatusValues
+                                items: managerDropDownVals
                                     .map<DropdownMenuItem<String>>(
                                         (String value) {
                                   return DropdownMenuItem<String>(
@@ -647,123 +251,571 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                           SizedBox(
                             height: deviceHeight * 0.02,
                           ),
-                          ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  loading = false;
-                                });
-                                PcProviderDatabaseService()
-                                    .updateFormStatus(
-                                        filteredForms[index].pcProviderDocId,
-                                        filteredForms[index].formstatus,
-                                        _administrator.adminDocId)
-                                    .then((value) {
+                          employeeAccounts[index].manager
+                              ? Column(
+                                  children: [
+                                    Text(
+                                      "Select Employees For this Manager",
+                                      style: TextStyle(
+                                          fontSize: deviceWidth * 0.04,
+                                          fontWeight: FontWeight.w300),
+                                    ),
+                                    SizedBox(
+                                      height: deviceHeight * 0.3,
+                                      // color: Colors.amber,
+                                      child: SingleChildScrollView(
+                                        child: SizedBox(
+                                          height: deviceHeight * 0.3,
+                                          child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Expanded(
+                                                  child: ListView.builder(
+                                                    itemCount:
+                                                        employeeAccounts.length,
+                                                    itemBuilder:
+                                                        (context, index2) {
+                                                      return employeeAccounts[
+                                                                      index2]
+                                                                  .employeeDocId !=
+                                                              employeeAccounts[
+                                                                      index]
+                                                                  .employeeDocId
+                                                          ? Padding(
+                                                              padding:
+                                                                  const EdgeInsets
+                                                                      .all(8.0),
+                                                              child: Card(
+                                                                clipBehavior:
+                                                                    Clip.hardEdge,
+                                                                elevation: 8,
+                                                                child:
+                                                                    CheckboxListTile(
+                                                                        controlAffinity:
+                                                                            ListTileControlAffinity
+                                                                                .leading,
+                                                                        title:
+                                                                            Text(
+                                                                          ("${employeeAccounts[index2].firstName}/${employeeAccounts[index2].email}").length < 20
+                                                                              ? ("${employeeAccounts[index2].firstName}/${employeeAccounts[index2].email}")
+                                                                              : "${("${employeeAccounts[index2].firstName}/${employeeAccounts[index2].email}").substring(0, 20)}...",
+                                                                          style:
+                                                                              TextStyle(color: checkBoxValues[index][index2] ? Colors.white : Colors.black),
+                                                                        ),
+                                                                        tileColor:
+                                                                            Colors
+                                                                                .white,
+                                                                        selectedTileColor:
+                                                                            Colors
+                                                                                .black45,
+                                                                        checkColor:
+                                                                            Colors
+                                                                                .white,
+                                                                        activeColor:
+                                                                            Colors
+                                                                                .black45,
+                                                                        selected:
+                                                                            checkBoxValues[index][
+                                                                                index2],
+                                                                        value: checkBoxValues[index]
+                                                                            [
+                                                                            index2],
+                                                                        onChanged:
+                                                                            (value) {
+                                                                          setState(
+                                                                              () {
+                                                                            checkBoxValues[index][index2] =
+                                                                                value!;
+                                                                          });
+                                                                        }),
+                                                              ),
+                                                            )
+                                                          : const SizedBox(
+                                                              height: 0,
+                                                            );
+                                                    },
+                                                  ),
+                                                )
+                                              ]),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox(
+                                  height: 0,
+                                ),
+                          SizedBox(
+                            height: deviceHeight * 0.02,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: ElevatedButton(
+                                onPressed: () {
                                   setState(() {
-                                    loading = true;
+                                    loading = false;
                                   });
-                                  if (value) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content:
-                                          Text('Form Updated Successfully'),
-                                      backgroundColor: Colors.green,
-                                    ));
+                                  if (employeeAccounts[index].manager) {
+                                    List<String> employeesAddedTothisManag = [];
+                                    for (var i = 0;
+                                        i < checkBoxValues[index].length;
+                                        i++) {
+                                      if (checkBoxValues[index][i]) {
+                                        employeesAddedTothisManag.add(
+                                            employeeAccounts[i].employeeDocId);
+                                        // debugPrint(
+                                        //     "Man: ${employeeAccounts[index].firstName} ${employeeAccounts[i].employeeDocId}");
+                                      }
+                                    }
+                                    if (employeesAddedTothisManag.isNotEmpty) {
+                                      EmployeeDatabaseService()
+                                          .assignEmployeeManager(
+                                              employeeAccounts[index]
+                                                  .employeeDocId,
+                                              employeeAccounts[index].firstName,
+                                              employeeAccounts[index].manager,
+                                              employeesAddedTothisManag)
+                                          .then((value) {
+                                        setState(() {
+                                          loading = true;
+                                        });
+                                        if (value!) {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                            content: Text(
+                                                'Manager Assigned Successfully'),
+                                            backgroundColor: Colors.green,
+                                          ));
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                            content: Text(
+                                                'Manager Failed to be Assigned'),
+                                            backgroundColor: Colors.red,
+                                          ));
+                                        }
+                                      });
+                                    } else {
+                                      setState(() {
+                                        loading = true;
+                                      });
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content: Text(
+                                            'You did not assign employees for the manager'),
+                                        backgroundColor: Colors.red,
+                                      ));
+                                    }
+                                  } else {
+                                    EmployeeDatabaseService()
+                                        .assignEmployeeManager(
+                                            employeeAccounts[index]
+                                                .employeeDocId,
+                                            employeeAccounts[index].firstName,
+                                            employeeAccounts[index].manager,
+                                            []).then((value) {
+                                      setState(() {
+                                        loading = true;
+                                      });
+                                      if (value!) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text(
+                                              'Employee Role Assigned Successfully'),
+                                          backgroundColor: Colors.green,
+                                        ));
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text(
+                                              'Employee Role Failed to be Assigned'),
+                                          backgroundColor: Colors.red,
+                                        ));
+                                      }
+                                    });
+                                  }
+                                },
+                                child: Text("Submit",
+                                    style: TextStyle(
+                                        fontSize: deviceWidth * 0.04))),
+                          )
+                        ],
+                      ),
+                    );
+                  },
+                  itemCount: employeeAccounts.length,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: deviceWidth,
+          height: deviceHeight * 0.79,
+          child: Column(
+            children: [
+              const Text("PC Providers"),
+              SizedBox(
+                height: deviceWidth * 0.03,
+              ),
+              SizedBox(
+                height: deviceHeight * 0.7,
+                child: ListView.builder(
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: ListTile(
+                        leading: SizedBox(
+                            height: deviceHeight * 0.055,
+                            child: const Icon(Icons.computer)),
+                        title: Text(
+                            "Name: ${pcProviders[index].firstName}, Acc Status: ${accountStatusValues[pcProviders[index].accountStatus]}"),
+                        subtitle: Column(
+                          children: [
+                            Text(
+                                "Team: ${pcProviders[index].team} Joined: ${dateFormat.format(pcProviders[index].createdDate)}, Amount Earned: ${pcProviders[index].totalAmountEarned} Assigned To: ${pcProviders[index].employeeName != "" ? pcProviders[index].employeeName : "N/A"}"),
+                            SizedBox(
+                              height: deviceHeight * 0.03,
+                            ),
+                            RawAutocomplete<String>(
+                              optionsBuilder:
+                                  (TextEditingValue textEditingValue) {
+                                return getEmployee(textEditingValue.text);
+                              },
+                              fieldViewBuilder: (BuildContext context,
+                                  TextEditingController textEditingController,
+                                  FocusNode focusNode,
+                                  VoidCallback onFieldSubmitted) {
+                                _employeeSuggestionController.text =
+                                    textEditingController.text;
+                                debugPrint(
+                                    "TxCo: ${textEditingController.text} ${_employeeSuggestionController.text}");
+                                return TextFormField(
+                                  controller: textEditingController,
+                                  focusNode: focusNode,
+                                  onFieldSubmitted: (String value) {
+                                    onFieldSubmitted();
+                                    debugPrint(
+                                        "TxCo2: ${textEditingController.text} ${_employeeSuggestionController.text} $value");
+                                    setState(() {});
+                                  },
+                                  decoration: const InputDecoration(
+                                    iconColor: Colors.white,
+                                    labelText: 'Assign To: ',
+                                    border: OutlineInputBorder(),
+                                  ),
+                                );
+                              },
+                              optionsViewBuilder: (BuildContext context,
+                                  AutocompleteOnSelected<String> onSelected,
+                                  Iterable<String> options) {
+                                return Align(
+                                  alignment: Alignment.topLeft,
+                                  child: Material(
+                                    elevation: 4.0,
+                                    child: SizedBox(
+                                      height: deviceHeight * 0.2,
+                                      width: deviceWidth * 0.7,
+                                      child: ListView.builder(
+                                        padding: const EdgeInsets.all(8.0),
+                                        itemCount: options.length,
+                                        itemBuilder:
+                                            (BuildContext context, int index) {
+                                          final String option =
+                                              options.elementAt(index);
+                                          return GestureDetector(
+                                            onTap: () {
+                                              onSelected(option);
+                                            },
+                                            child: ListTile(
+                                              title: Text(option),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            SizedBox(
+                              height: deviceHeight * 0.03,
+                            ),
+                            ElevatedButton(
+                                onPressed: () {
+                                  int employeeIndex = employeeNames.indexWhere(
+                                      (element) =>
+                                          element ==
+                                          _employeeSuggestionController.text);
+                                  debugPrint(
+                                      "Emt: ${_employeeSuggestionController.text}");
+                                  if (employeeIndex != -1) {
+                                    setState(() {
+                                      loading = false;
+                                    });
+                                    PcProviderDatabaseService()
+                                        .assignEmployee(
+                                      pcProviders[index].pcProviderDocId,
+                                      pcProviders[index].firstName +
+                                          pcProviders[index].lastName,
+                                      employeeAccounts[employeeIndex]
+                                          .employeeDocId,
+                                      employeeNames[employeeIndex],
+                                    )
+                                        .then((value) {
+                                      setState(() {
+                                        loading = true;
+                                      });
+                                      if (value!) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text(
+                                              'Employee Assigned Successfully'),
+                                          backgroundColor: Colors.green,
+                                        ));
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content:
+                                              Text('Failed To Assign Employee'),
+                                          backgroundColor: Colors.red,
+                                        ));
+                                      }
+                                    });
                                   } else {
                                     ScaffoldMessenger.of(context)
                                         .showSnackBar(const SnackBar(
-                                      content: Text('Form Failed To Update'),
+                                      content: Text('No employee Assigned'),
                                       backgroundColor: Colors.red,
                                     ));
                                   }
-                                });
-                              },
-                              child: Text("Submit",
-                                  style:
-                                      TextStyle(fontSize: deviceWidth * 0.04)))
-                        ],
+                                },
+                                child: Text("Submit",
+                                    style: TextStyle(
+                                        fontSize: deviceWidth * 0.04)))
+                          ],
+                        ),
+                        onTap: null,
                       ),
-                      onTap: null,
-                    ),
-                  );
-                },
-                itemCount: filteredForms.length,
+                    );
+                  },
+                  itemCount: pcProviders.length,
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    ];
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Administrator",
-          style: TextStyle(fontSize: deviceWidth * 0.06),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () {
-              _logoutAction(context, deviceWidth);
-            },
+            ],
           ),
-        ],
-      ),
-      drawer: loading
-          ? Drawer(
-              child: ListView(
+        ),
+        SizedBox(
+          width: deviceWidth,
+          height: deviceHeight * 0.79,
+          child: Column(
+            children: [
+              const Text("Forms"),
+              SizedBox(
+                height: deviceHeight * 0.02,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  UserAccountsDrawerHeader(
-                    accountName: Text(
-                        '${_administrator.firstName} ${_administrator.lastName}'),
-                    accountEmail: Text(_administrator.email),
-                    // currentAccountPicture: const CircleAvatar(
-                    //   backgroundImage: AssetImage('assets/profile_picture.jpg'),
-                    // ),
-                    onDetailsPressed: () {},
+                  Text(
+                    "Filter Based On: ",
+                    style: TextStyle(fontSize: deviceWidth * 0.04),
                   ),
-                  ListTile(
-                    leading: const Icon(Icons.add),
-                    title: const Text('Add Onboarding Manager'),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) {
-                          return const Placeholder();
-                        },
-                      ));
+                  DropdownButton<String>(
+                    value: formStatusValues[filterIndex],
+                    onChanged: (value) {
+                      setState(() {
+                        filterIndex = formStatusValues
+                            .indexWhere((element) => element == value);
+                      });
+                      filteredForms.clear();
+                      for (var form in forms) {
+                        if (form.formstatus == filterIndex) {
+                          filteredForms.add(form);
+                        }
+                      }
                     },
+                    items: formStatusValues
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
-            )
-          : const LoadingAnimation2(),
-      body: loading
-          ? Padding(
-              padding: EdgeInsets.all(deviceWidth * 0.04),
-              child: tabs[_currentIndex],
-            )
-          : const LoadingAnimation2(),
-      bottomNavigationBar: loading
-          ? BottomNavigationBar(
-              items: const [
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.work), label: "Employee"),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.computer), label: "PC"),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.edit_document), label: "Forms")
-              ],
-              elevation: deviceWidth * 0.1,
-              backgroundColor: Colors.white,
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
+              SizedBox(
+                height: deviceHeight * 0.03,
+              ),
+              SizedBox(
+                height: deviceHeight * 0.608,
+                child: ListView.builder(
+                  itemBuilder: (context, index) {
+                    return Card(
+                      child: ListTile(
+                        leading: SizedBox(
+                            height: deviceHeight * 0.055,
+                            child: const Icon(Icons.computer)),
+                        title: Text(
+                            "Name: ${filteredForms[index].firstName} ${filteredForms[index].lastName}, Form Status: ${formStatusValues[filteredForms[index].formstatus]}"),
+                        subtitle: Column(
+                          children: [
+                            Text(
+                                "Joined: ${dateFormat.format(filteredForms[index].createdDate)} email: ${filteredForms[index].email}, phoneNumber: ${filteredForms[index].phoneNumber}, birthDate: ${dateFormat.format(filteredForms[index].birthDate)}, Govt ID: ${filteredForms[index].govtId}, Country: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                Text(
+                                  "Update Form Status: ",
+                                  style:
+                                      TextStyle(fontSize: deviceWidth * 0.04),
+                                ),
+                                DropdownButton<String>(
+                                  value: formStatusValues[
+                                      filteredForms[index].formstatus],
+                                  onChanged: (value) {
+                                    setState(() {
+                                      filteredForms[index].formstatus =
+                                          formStatusValues.indexWhere(
+                                              (element) => element == value);
+                                    });
+                                  },
+                                  items: formStatusValues
+                                      .map<DropdownMenuItem<String>>(
+                                          (String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                            SizedBox(
+                              height: deviceHeight * 0.02,
+                            ),
+                            ElevatedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    loading = false;
+                                  });
+                                  PcProviderDatabaseService()
+                                      .updateFormStatus(
+                                          filteredForms[index].pcProviderDocId,
+                                          filteredForms[index].formstatus,
+                                          _administrator.adminDocId)
+                                      .then((value) {
+                                    setState(() {
+                                      loading = true;
+                                    });
+                                    if (value) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content:
+                                            Text('Form Updated Successfully'),
+                                        backgroundColor: Colors.green,
+                                      ));
+                                    } else {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                        content: Text('Form Failed To Update'),
+                                        backgroundColor: Colors.red,
+                                      ));
+                                    }
+                                  });
+                                },
+                                child: Text("Submit",
+                                    style: TextStyle(
+                                        fontSize: deviceWidth * 0.04)))
+                          ],
+                        ),
+                        onTap: null,
+                      ),
+                    );
+                  },
+                  itemCount: filteredForms.length,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ];
+
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            "Administrator",
+            style: TextStyle(fontSize: deviceWidth * 0.06),
+          ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.exit_to_app),
+              onPressed: () {
+                _logoutAction(context, deviceWidth);
               },
-            )
-          : null,
-    );
+            ),
+          ],
+        ),
+        drawer: loading
+            ? Drawer(
+                child: ListView(
+                  children: [
+                    UserAccountsDrawerHeader(
+                      accountName: Text(
+                          '${_administrator.firstName} ${_administrator.lastName}'),
+                      accountEmail: Text(_administrator.email),
+                      // currentAccountPicture: const CircleAvatar(
+                      //   backgroundImage: AssetImage('assets/profile_picture.jpg'),
+                      // ),
+                      onDetailsPressed: () {},
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.add),
+                      title: const Text('Add Onboarding Manager'),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(
+                          builder: (context) {
+                            return const AddOnboardingManager();
+                          },
+                        ));
+                      },
+                    ),
+                  ],
+                ),
+              )
+            : const LoadingAnimation2(),
+        body: loading
+            ? Padding(
+                padding: EdgeInsets.all(deviceWidth * 0.04),
+                child: tabs[_currentIndex],
+              )
+            : const LoadingAnimation2(),
+        bottomNavigationBar: loading
+            ? BottomNavigationBar(
+                items: const [
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.work), label: "Employee"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.computer), label: "PC"),
+                  BottomNavigationBarItem(
+                      icon: Icon(Icons.edit_document), label: "Forms")
+                ],
+                elevation: deviceWidth * 0.1,
+                backgroundColor: Colors.white,
+                currentIndex: _currentIndex,
+                onTap: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+              )
+            : null,
+      );
+    } catch (e) {
+      debugPrint("Admin Dashboard Widget Error: $e");
+      return const Placeholder();
+    }
   }
 }

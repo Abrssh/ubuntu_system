@@ -121,9 +121,12 @@ class EmployeeDatabaseService {
     }
   }
 
-  Stream<List<EmployeeAccount>> getEmployeesForTL() {
+  Stream<List<EmployeeAccount>> getEmployeesForTL(String managerId) {
     try {
-      return employeeCollection.snapshots().map(_mapQuerSnapToEmployeeForTL);
+      return employeeCollection
+          .where("managerId", isEqualTo: managerId)
+          .snapshots()
+          .map(_mapQuerSnapToEmployeeForTL);
     } catch (e) {
       debugPrint("GetEmployeesForTL: $e");
       return Stream.value([]);
@@ -148,18 +151,23 @@ class EmployeeDatabaseService {
             .where("managerId", isEqualTo: employeeId)
             .get();
 
-        transaction
-            .update(employeeCollection.doc(employeeId), {"manager": isManager});
         if (isManager) {
           for (var assignedEmployeeId in employeesAssignedToManager) {
-            transaction.update(employeeCollection.doc(assignedEmployeeId),
-                {"managerId": employeeId, "managerName": managerName});
+            transaction.update(employeeCollection.doc(assignedEmployeeId), {
+              "managerId": employeeId,
+              "managerName": managerName,
+              "manager": false
+            });
           }
+          transaction.update(employeeCollection.doc(employeeId),
+              {"manager": isManager, "managerId": "", "managerName": ""});
         } else {
           for (var docSnap in employeeQuerSnap.docs) {
             transaction.update(employeeCollection.doc(docSnap.id),
                 {"managerId": "", "managerName": ""});
           }
+          transaction.update(
+              employeeCollection.doc(employeeId), {"manager": isManager});
         }
         return Future.value({"val": true});
       });
