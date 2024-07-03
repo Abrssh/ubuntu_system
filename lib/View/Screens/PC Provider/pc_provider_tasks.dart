@@ -18,6 +18,8 @@ class _PCProviderTasksState extends State<PCProviderTasks> {
 
   bool loading = false;
 
+  DateFormat dateFormat = DateFormat("yMd");
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +41,7 @@ class _PCProviderTasksState extends State<PCProviderTasks> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tasks Done On this PC'),
+        title: const Text('Tasks Done On this PC'),
         centerTitle: true,
       ),
       body: loading
@@ -60,10 +62,11 @@ class _PCProviderTasksState extends State<PCProviderTasks> {
                           Text(
                               'Amount Earned: \$${task.payAmount.toStringAsFixed(2)}'),
                           Text(
-                              'Created Date: ${DateFormat.yMd(task.createdDate)}'),
+                              'Created Date: ${dateFormat.format(task.createdDate)}'),
                           Text(
-                              'Feedback Date: ${DateFormat.yMd(task.feedbackDate)}'),
-                          Text('Feedback: ${task.feedback}'),
+                              'Feedback Date: ${dateFormat.format(task.feedbackDate)}'),
+                          Text(
+                              'Feedback: ${task.feedback == 99 ? 'N/A' : task.feedback}'),
                         ],
                       ),
                     ),

@@ -9,6 +9,10 @@ class TaskDatabaseService {
       FirebaseFirestore.instance.collection("pcProvider");
   final CollectionReference employeeCollection =
       FirebaseFirestore.instance.collection("employee");
+  final CollectionReference administratorCollection =
+      FirebaseFirestore.instance.collection("administrator");
+
+  final String adminDocId = "Liz7zCjekkKmcIEieGdz";
 
   List<Task> _mapQuerSnapToTask(QuerySnapshot querySnapshot) {
     try {
@@ -53,12 +57,19 @@ class TaskDatabaseService {
         });
         double amountForPc = task.payAmount * 0.4;
         double amountForEmployee = task.payAmount * 0.17;
+        double amountForAdmin = task.payAmount * 0.43;
         transaction.update(pcProviderCollection.doc(task.pcProviderId), {
           "personalAmountEarned": FieldValue.increment(amountForPc),
           "totalAmountEarned": FieldValue.increment(task.payAmount),
         });
         transaction.update(employeeCollection.doc(task.employeeId), {
-          "amountReceived": amountForEmployee,
+          "amountReceived": FieldValue.increment(amountForEmployee),
+        });
+        transaction.update(administratorCollection.doc(adminDocId), {
+          "totalAmountEarned": FieldValue.increment(task.payAmount),
+          "pcProvidersEarned": FieldValue.increment(amountForPc),
+          "employeesEarned": FieldValue.increment(amountForEmployee),
+          "adminEarned": FieldValue.increment(amountForAdmin)
         });
         return Future.value({"val": true});
       });
@@ -73,6 +84,7 @@ class TaskDatabaseService {
     try {
       return taskCollection
           .where("pcProviderId", isEqualTo: pcProviderId)
+          .limit(50)
           .get()
           .then(_mapQuerSnapToTask);
     } catch (e) {
@@ -85,6 +97,7 @@ class TaskDatabaseService {
     try {
       return taskCollection
           .where("employeeId", isEqualTo: employeeId)
+          .limit(50)
           .get()
           .then(_mapQuerSnapToTask);
     } catch (e) {

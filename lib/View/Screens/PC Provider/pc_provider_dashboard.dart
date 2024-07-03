@@ -174,8 +174,9 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
     final double deviceHeight = MediaQuery.of(context).size.height;
     final double deviceWidth = MediaQuery.of(context).size.width;
 
-    return MaterialApp(
-      home: Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
         appBar: AppBar(
           title: Text(
             'Ubuntu',
@@ -312,7 +313,8 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
                                         style: TextStyle(
                                             fontSize: deviceWidth * 0.045,
                                             fontWeight: FontWeight.w400)),
-                                    Text('${_pcProvider.totalAmountEarned} \$',
+                                    Text(
+                                        '${_pcProvider.totalAmountEarned.toStringAsFixed(2)} \$',
                                         style: TextStyle(
                                             fontSize: deviceWidth * 0.06,
                                             fontWeight: FontWeight.w300)),
@@ -327,7 +329,7 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
                                             fontSize: deviceWidth * 0.06,
                                             fontWeight: FontWeight.w600)),
                                     Text(
-                                        '${_pcProvider.personalAmountEarned} \$',
+                                        '${_pcProvider.personalAmountEarned.toStringAsFixed(2)} \$',
                                         style: TextStyle(
                                             fontSize: deviceWidth * 0.06,
                                             fontWeight: FontWeight.w400)),
@@ -337,7 +339,7 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
                                 Text('Account Status',
                                     style: TextStyle(
                                         fontSize: deviceWidth * 0.07,
-                                        fontWeight: FontWeight.w300)),
+                                        fontWeight: FontWeight.w100)),
                                 SizedBox(height: deviceHeight * 0.01),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -347,7 +349,7 @@ class _PcProviderDashboardState extends State<PcProviderDashboard> {
                                             _pcProvider.accountStatus],
                                         style: TextStyle(
                                             fontSize: deviceWidth * 0.08,
-                                            fontWeight: FontWeight.w400)),
+                                            fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ],

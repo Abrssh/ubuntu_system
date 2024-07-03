@@ -33,7 +33,7 @@ class AuthGate extends StatelessWidget {
                   },
                   providers: [
                     EmailAuthProvider(),
-                    PhoneAuthProvider(),
+                    // PhoneAuthProvider(),
                     gua.GoogleProvider(clientId: "")
                   ],
                   subtitleBuilder: (context, action) {

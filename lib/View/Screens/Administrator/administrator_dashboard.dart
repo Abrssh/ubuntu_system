@@ -107,6 +107,16 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
 
   DateFormat dateFormat = DateFormat("yMd");
 
+  List<String> filterFormStatusValues = [
+    "All",
+    "Ready to onBoard",
+    "onBoarded",
+    "Ready to Apply",
+    "Applied",
+    "Ready to Setup",
+    "Ready to be Active"
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -118,7 +128,7 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
         _administrator = value[0];
         getEmployeesForAdSub =
             EmployeeDatabaseService().getEmployeesForAdmin().listen((empEvent) {
-          debugPrint("Emps: ${empEvent.length}");
+          // debugPrint("Emps: ${empEvent.length}");
           employeeAccounts.clear();
           employeeAccounts.addAll(empEvent);
           employeeNames.clear();
@@ -138,9 +148,12 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
           getPcProviderForAdmSub = PcProviderDatabaseService()
               .getPcProvidersForAdmin()
               .listen((pcEvent) {
+            pcEvent.sort(
+              (a, b) => a.createdDate.millisecondsSinceEpoch
+                  .compareTo(b.createdDate.millisecondsSinceEpoch),
+            );
             pcProviders.clear();
             forms.clear();
-            filteredForms.clear();
             for (PcProvider pcProv in pcEvent) {
               pcProviders.add(pcProv);
               forms.add(pcProv);
@@ -148,7 +161,19 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
             // debugPrint("Forms leng: ${forms.length} : ${pcProviders.length}");
             // inludes only pc providers that are in the onboarding stages
             forms.removeWhere((element) => element.formstatus == 5);
-            filteredForms.addAll(forms);
+            int tempFilterIndex = filterIndex;
+            filteredForms.clear();
+            bool allSelected = true;
+            if (tempFilterIndex > 0) {
+              allSelected = false;
+              tempFilterIndex -= 1;
+            }
+            for (var form in forms) {
+              if (form.formstatus == tempFilterIndex ||
+                  (tempFilterIndex == 0 && allSelected)) {
+                filteredForms.add(form);
+              }
+            }
             pcProviders.removeWhere((element) => element.formstatus < 5);
             debugPrint("Forms leng: ${forms.length} : ${pcProviders.length}");
             setState(() {
@@ -181,6 +206,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
       final double deviceHeight = MediaQuery.of(context).size.height;
       final double deviceWidth = MediaQuery.of(context).size.width;
       debugPrint("Administration Dashboard");
+
+      BuildContext mainBuildContext = context;
 
       final tabs = [
         SizedBox(
@@ -495,8 +522,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                   focusNode: focusNode,
                                   onFieldSubmitted: (String value) {
                                     onFieldSubmitted();
-                                    debugPrint(
-                                        "TxCo2: ${textEditingController.text} ${_employeeSuggestionController.text} $value");
+                                    // debugPrint(
+                                    //     "TxCo2: ${textEditingController.text} ${_employeeSuggestionController.text} $value");
                                     setState(() {});
                                   },
                                   decoration: const InputDecoration(
@@ -547,8 +574,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                       (element) =>
                                           element ==
                                           _employeeSuggestionController.text);
-                                  debugPrint(
-                                      "Emt: ${_employeeSuggestionController.text}");
+                                  // debugPrint(
+                                  //     "Emt: ${_employeeSuggestionController.text}");
                                   if (employeeIndex != -1) {
                                     setState(() {
                                       loading = false;
@@ -622,20 +649,27 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                     style: TextStyle(fontSize: deviceWidth * 0.04),
                   ),
                   DropdownButton<String>(
-                    value: formStatusValues[filterIndex],
+                    value: filterFormStatusValues[filterIndex],
                     onChanged: (value) {
                       setState(() {
-                        filterIndex = formStatusValues
+                        filterIndex = filterFormStatusValues
                             .indexWhere((element) => element == value);
                       });
+                      int tempFilterIndex = filterIndex;
                       filteredForms.clear();
+                      bool allSelected = true;
+                      if (tempFilterIndex > 0) {
+                        allSelected = false;
+                        tempFilterIndex -= 1;
+                      }
                       for (var form in forms) {
-                        if (form.formstatus == filterIndex) {
+                        if (form.formstatus == tempFilterIndex ||
+                            (tempFilterIndex == 0 && allSelected)) {
                           filteredForms.add(form);
                         }
                       }
                     },
-                    items: formStatusValues
+                    items: filterFormStatusValues
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
@@ -706,18 +740,18 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                           filteredForms[index].formstatus,
                                           _administrator.adminDocId)
                                       .then((value) {
-                                    setState(() {
-                                      loading = true;
-                                    });
+                                    // setState(() {
+                                    //   loading = true;
+                                    // });
                                     if (value) {
-                                      ScaffoldMessenger.of(context)
+                                      ScaffoldMessenger.of(mainBuildContext)
                                           .showSnackBar(const SnackBar(
                                         content:
                                             Text('Form Updated Successfully'),
                                         backgroundColor: Colors.green,
                                       ));
                                     } else {
-                                      ScaffoldMessenger.of(context)
+                                      ScaffoldMessenger.of(mainBuildContext)
                                           .showSnackBar(const SnackBar(
                                         content: Text('Form Failed To Update'),
                                         backgroundColor: Colors.red,
@@ -742,76 +776,79 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
         ),
       ];
 
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(
-            "Administrator",
-            style: TextStyle(fontSize: deviceWidth * 0.06),
-          ),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.exit_to_app),
-              onPressed: () {
-                _logoutAction(context, deviceWidth);
-              },
+      return PopScope(
+        canPop: false,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(
+              "Administrator",
+              style: TextStyle(fontSize: deviceWidth * 0.06),
             ),
-          ],
-        ),
-        drawer: loading
-            ? Drawer(
-                child: ListView(
-                  children: [
-                    UserAccountsDrawerHeader(
-                      accountName: Text(
-                          '${_administrator.firstName} ${_administrator.lastName}'),
-                      accountEmail: Text(_administrator.email),
-                      // currentAccountPicture: const CircleAvatar(
-                      //   backgroundImage: AssetImage('assets/profile_picture.jpg'),
-                      // ),
-                      onDetailsPressed: () {},
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.add),
-                      title: const Text('Add Onboarding Manager'),
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) {
-                            return const AddOnboardingManager();
-                          },
-                        ));
-                      },
-                    ),
-                  ],
-                ),
-              )
-            : const LoadingAnimation2(),
-        body: loading
-            ? Padding(
-                padding: EdgeInsets.all(deviceWidth * 0.04),
-                child: tabs[_currentIndex],
-              )
-            : const LoadingAnimation2(),
-        bottomNavigationBar: loading
-            ? BottomNavigationBar(
-                items: const [
-                  BottomNavigationBarItem(
-                      icon: Icon(Icons.work), label: "Employee"),
-                  BottomNavigationBarItem(
-                      icon: Icon(Icons.computer), label: "PC"),
-                  BottomNavigationBarItem(
-                      icon: Icon(Icons.edit_document), label: "Forms")
-                ],
-                elevation: deviceWidth * 0.1,
-                backgroundColor: Colors.white,
-                currentIndex: _currentIndex,
-                onTap: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.exit_to_app),
+                onPressed: () {
+                  _logoutAction(context, deviceWidth);
                 },
-              )
-            : null,
+              ),
+            ],
+          ),
+          drawer: loading
+              ? Drawer(
+                  child: ListView(
+                    children: [
+                      UserAccountsDrawerHeader(
+                        accountName: Text(
+                            '${_administrator.firstName} ${_administrator.lastName}'),
+                        accountEmail: Text(_administrator.email),
+                        // currentAccountPicture: const CircleAvatar(
+                        //   backgroundImage: AssetImage('assets/profile_picture.jpg'),
+                        // ),
+                        onDetailsPressed: () {},
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.add),
+                        title: const Text('Add Onboarding Manager'),
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(
+                            builder: (context) {
+                              return const AddOnboardingManager();
+                            },
+                          ));
+                        },
+                      ),
+                    ],
+                  ),
+                )
+              : const LoadingAnimation2(),
+          body: loading
+              ? Padding(
+                  padding: EdgeInsets.all(deviceWidth * 0.04),
+                  child: tabs[_currentIndex],
+                )
+              : const LoadingAnimation2(),
+          bottomNavigationBar: loading
+              ? BottomNavigationBar(
+                  items: const [
+                    BottomNavigationBarItem(
+                        icon: Icon(Icons.work), label: "Employee"),
+                    BottomNavigationBarItem(
+                        icon: Icon(Icons.computer), label: "PC"),
+                    BottomNavigationBarItem(
+                        icon: Icon(Icons.edit_document), label: "Forms")
+                  ],
+                  elevation: deviceWidth * 0.1,
+                  backgroundColor: Colors.white,
+                  currentIndex: _currentIndex,
+                  onTap: (index) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                )
+              : null,
+        ),
       );
     } catch (e) {
       debugPrint("Admin Dashboard Widget Error: $e");

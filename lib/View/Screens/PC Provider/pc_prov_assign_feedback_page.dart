@@ -26,7 +26,10 @@ class _PCProvAssignFeedbackPageState extends State<PCProvAssignFeedbackPage> {
     double deviceHeight = deviceSize.height;
 
     return Scaffold(
-      appBar: AppBar(title: Text("Assign Feedback")),
+      appBar: AppBar(
+        title: const Text("Assign Feedback"),
+        centerTitle: true,
+      ),
       body: loading
           ? Padding(
               padding: EdgeInsets.all(deviceWidth * 0.04),
@@ -67,7 +70,9 @@ class _PCProvAssignFeedbackPageState extends State<PCProvAssignFeedbackPage> {
                           validator: (value) =>
                               value!.isEmpty || int.tryParse(value) == null
                                   ? "Give a Feedback"
-                                  : null,
+                                  : int.parse(value) > 5 || int.parse(value) < 0
+                                      ? "Not a valid Feedback"
+                                      : null,
                           onChanged: (value) {
                             setState(() {
                               if (int.tryParse(value) != null) {
@@ -102,7 +107,6 @@ class _PCProvAssignFeedbackPageState extends State<PCProvAssignFeedbackPage> {
                                           Text('Feedback given Successfully'),
                                       backgroundColor: Colors.green,
                                     ));
-                                    Navigator.pop(context);
                                   } else {
                                     setState(() {
                                       loading = true;

@@ -199,7 +199,6 @@ class _AddOnboardingManagerState extends State<AddOnboardingManager> {
                                           'Onboarding Manager Was Created Successfully'),
                                       backgroundColor: Colors.green,
                                     ));
-                                    Navigator.pop(context);
                                   } else {
                                     setState(() {
                                       loading = true;

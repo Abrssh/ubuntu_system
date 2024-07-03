@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 
 class PcProviderDatabaseService {
@@ -8,9 +7,6 @@ class PcProviderDatabaseService {
       FirebaseFirestore.instance.collection("pcProvider");
   final CollectionReference employeeCollection =
       FirebaseFirestore.instance.collection("employee");
-
-  DateFormat dateFormat = DateFormat("yMd");
-  DateFormat timeFormat = DateFormat("jm");
 
   List<PcProvider> _mapQuerSnapToPcProvider(QuerySnapshot querySnapshot) {
     try {
@@ -186,6 +182,18 @@ class PcProviderDatabaseService {
           .map(_mapQuerSnapToPcProvidersForTL);
     } catch (e) {
       debugPrint("GetPcProvidersForTL: $e");
+      return Stream.value([]);
+    }
+  }
+
+  Stream<List<PcProvider>> getFormsForOnboardManager() {
+    try {
+      return pcProviderCollection
+          .where("formStatus", isLessThan: 5)
+          .snapshots()
+          .map(_mapQuerSnapToPcProvidersForTL);
+    } catch (e) {
+      debugPrint("GetFormsForOnboardManager: $e");
       return Stream.value([]);
     }
   }

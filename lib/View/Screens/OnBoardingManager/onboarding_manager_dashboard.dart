@@ -9,6 +9,7 @@ import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/pc_provider_dat
 import 'package:ubuntu_system/Data/Model/on_boarding_manager.dart';
 import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
+import 'package:ubuntu_system/View/Widgets/loading_animation.dart';
 
 class OnboardingManagerDashBoard extends StatefulWidget {
   const OnboardingManagerDashBoard({super.key});
@@ -71,10 +72,22 @@ class _OnboardingManagerDashBoardState
     "Ready to be Active"
   ];
 
+  List<String> filterFormStatusValues = [
+    "All",
+    "Ready to onBoard",
+    "onBoarded",
+    "Ready to Apply",
+    "Applied",
+    "Ready to Setup",
+    "Ready to be Active"
+  ];
+
   List<PcProvider> forms = [], filteredForms = [];
   int filterIndex = 0;
 
   late StreamSubscription getFormsSub;
+
+  DateFormat dateFormat = DateFormat("yMd");
 
   @override
   void initState() {
@@ -84,12 +97,32 @@ class _OnboardingManagerDashBoardState
         .getOnboardingManager(authProv.uid, authProv.email!)
         .then((value) {
       _onBoardingManager = value[0];
-      getFormsSub =
-          PcProviderDatabaseService().getPcProvidersForAdmin().listen((event) {
+      getFormsSub = PcProviderDatabaseService()
+          .getFormsForOnboardManager()
+          .listen((event) {
         forms.clear();
-        filteredForms.clear();
+        event.sort(
+          (a, b) => a.createdDate.millisecondsSinceEpoch
+              .compareTo(b.createdDate.millisecondsSinceEpoch),
+        );
         forms.addAll(event);
-        filteredForms.addAll(event);
+        int tempFilterIndex = filterIndex;
+        filteredForms.clear();
+        bool allSelected = true;
+        if (tempFilterIndex > 0) {
+          allSelected = false;
+          tempFilterIndex -= 1;
+        }
+        for (var form in forms) {
+          if (form.formstatus == tempFilterIndex ||
+              (tempFilterIndex == 0 && allSelected)) {
+            filteredForms.add(form);
+          }
+        }
+        debugPrint("FilForms: ${filteredForms.length}");
+        setState(() {
+          loading = true;
+        });
       });
     });
   }
@@ -105,156 +138,177 @@ class _OnboardingManagerDashBoardState
     final double deviceHeight = MediaQuery.of(context).size.height;
     final double deviceWidth = MediaQuery.of(context).size.width;
     debugPrint("OnboardingManager Dashboard");
+    BuildContext mainBuildContext = context;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Onboarding Manager",
-          style: TextStyle(fontSize: deviceWidth * 0.06),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () {
-              _logoutAction(context, deviceWidth);
-            },
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            "Onboarding Manager",
+            style: TextStyle(fontSize: deviceWidth * 0.06),
           ),
-        ],
-      ),
-      body: SizedBox(
-        width: deviceWidth,
-        height: deviceHeight * 0.89,
-        child: Column(
-          children: [
-            const Text("Forms"),
-            SizedBox(
-              height: deviceHeight * 0.02,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Text(
-                  "Filter Based On: ",
-                  style: TextStyle(fontSize: deviceWidth * 0.04),
-                ),
-                DropdownButton<String>(
-                  value: formStatusValues[filterIndex],
-                  onChanged: (value) {
-                    setState(() {
-                      filterIndex = formStatusValues
-                          .indexWhere((element) => element == value);
-                    });
-                    filteredForms.clear();
-                    for (var form in forms) {
-                      if (form.formstatus == filterIndex) {
-                        filteredForms.add(form);
-                      }
-                    }
-                  },
-                  items: formStatusValues
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            SizedBox(
-              height: deviceHeight * 0.03,
-            ),
-            SizedBox(
-              height: deviceHeight * 0.7,
-              child: ListView.builder(
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      leading: SizedBox(
-                          height: deviceHeight * 0.055,
-                          child: const Icon(Icons.computer)),
-                      title: Text(
-                          "Name: ${filteredForms[index].firstName} ${filteredForms[index].lastName}, Form Status: ${formStatusValues[filteredForms[index].formstatus]}"),
-                      subtitle: Column(
-                        children: [
-                          Text(
-                              "Joined: ${DateFormat.yMd(filteredForms[index].createdDate)}) email: ${filteredForms[index].email}, phoneNumber: ${filteredForms[index].phoneNumber}, birthDate: ${DateFormat.yMd(filteredForms[index].birthDate)}, Govt ID: ${filteredForms[index].govtId}, Country: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              Text(
-                                "Update Form Status: ",
-                                style: TextStyle(fontSize: deviceWidth * 0.04),
-                              ),
-                              DropdownButton<String>(
-                                value: formStatusValues[
-                                    filteredForms[index].formstatus],
-                                onChanged: (value) {
-                                  setState(() {
-                                    filteredForms[index].formstatus =
-                                        formStatusValues.indexWhere(
-                                            (element) => element == value);
-                                  });
-                                },
-                                items: formStatusValues
-                                    .map<DropdownMenuItem<String>>(
-                                        (String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          ),
-                          SizedBox(
-                            height: deviceHeight * 0.02,
-                          ),
-                          ElevatedButton(
-                              onPressed: () {
-                                setState(() {
-                                  loading = false;
-                                });
-                                PcProviderDatabaseService()
-                                    .updateFormStatus(
-                                        filteredForms[index].pcProviderDocId,
-                                        filteredForms[index].formstatus,
-                                        _onBoardingManager.onBoardManDocID)
-                                    .then((value) {
-                                  setState(() {
-                                    loading = true;
-                                  });
-                                  if (value) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content:
-                                          Text('Form Updated Successfully'),
-                                      backgroundColor: Colors.green,
-                                    ));
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(const SnackBar(
-                                      content: Text('Form Failed To Update'),
-                                      backgroundColor: Colors.red,
-                                    ));
-                                  }
-                                });
-                              },
-                              child: Text("Submit",
-                                  style:
-                                      TextStyle(fontSize: deviceWidth * 0.04)))
-                        ],
-                      ),
-                      onTap: null,
-                    ),
-                  );
-                },
-                itemCount: filteredForms.length,
-              ),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.exit_to_app),
+              onPressed: () {
+                _logoutAction(context, deviceWidth);
+              },
             ),
           ],
         ),
+        body: loading
+            ? SizedBox(
+                width: deviceWidth,
+                height: deviceHeight * 0.89,
+                child: Column(
+                  children: [
+                    const Text("Forms"),
+                    SizedBox(
+                      height: deviceHeight * 0.02,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text(
+                          "Filter Based On: ",
+                          style: TextStyle(fontSize: deviceWidth * 0.04),
+                        ),
+                        DropdownButton<String>(
+                          value: filterFormStatusValues[filterIndex],
+                          onChanged: (value) {
+                            setState(() {
+                              filterIndex = filterFormStatusValues
+                                  .indexWhere((element) => element == value);
+                            });
+                            int tempFilterIndex = filterIndex;
+                            filteredForms.clear();
+                            bool allSelected = true;
+                            if (tempFilterIndex > 0) {
+                              allSelected = false;
+                              tempFilterIndex -= 1;
+                            }
+                            for (var form in forms) {
+                              if (form.formstatus == tempFilterIndex ||
+                                  (tempFilterIndex == 0 && allSelected)) {
+                                filteredForms.add(form);
+                              }
+                            }
+                          },
+                          items: filterFormStatusValues
+                              .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: deviceHeight * 0.03,
+                    ),
+                    SizedBox(
+                      height: deviceHeight * 0.608,
+                      child: ListView.builder(
+                        itemBuilder: (context, index) {
+                          return Card(
+                            child: ListTile(
+                              leading: SizedBox(
+                                  height: deviceHeight * 0.055,
+                                  child: const Icon(Icons.computer)),
+                              title: Text(
+                                  "Name: ${filteredForms[index].firstName} ${filteredForms[index].lastName}, Form Status: ${formStatusValues[filteredForms[index].formstatus]}"),
+                              subtitle: Column(
+                                children: [
+                                  Text(
+                                      "Joined: ${dateFormat.format(filteredForms[index].createdDate)}) email: ${filteredForms[index].email}, phoneNumber: ${filteredForms[index].phoneNumber}, birthDate: ${dateFormat.format(filteredForms[index].birthDate)}, Govt ID: ${filteredForms[index].govtId}, Country: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Text(
+                                        "Update Form Status: ",
+                                        style: TextStyle(
+                                            fontSize: deviceWidth * 0.04),
+                                      ),
+                                      DropdownButton<String>(
+                                        value: formStatusValues[
+                                            filteredForms[index].formstatus],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            filteredForms[index].formstatus =
+                                                formStatusValues.indexWhere(
+                                                    (element) =>
+                                                        element == value);
+                                          });
+                                        },
+                                        items: formStatusValues
+                                            .map<DropdownMenuItem<String>>(
+                                                (String value) {
+                                          return DropdownMenuItem<String>(
+                                            value: value,
+                                            child: Text(value),
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: deviceHeight * 0.02,
+                                  ),
+                                  ElevatedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          loading = false;
+                                        });
+                                        PcProviderDatabaseService()
+                                            .updateFormStatus(
+                                                filteredForms[index]
+                                                    .pcProviderDocId,
+                                                filteredForms[index].formstatus,
+                                                _onBoardingManager
+                                                    .onBoardManDocID)
+                                            .then((value) {
+                                          // setState(() {
+                                          //   loading = true;
+                                          // });
+                                          if (value) {
+                                            ScaffoldMessenger.of(
+                                                    mainBuildContext)
+                                                .showSnackBar(const SnackBar(
+                                              content: Text(
+                                                  'Form Updated Successfully'),
+                                              backgroundColor: Colors.green,
+                                            ));
+                                          } else {
+                                            ScaffoldMessenger.of(
+                                                    mainBuildContext)
+                                                .showSnackBar(const SnackBar(
+                                              content:
+                                                  Text('Form Failed To Update'),
+                                              backgroundColor: Colors.red,
+                                            ));
+                                          }
+                                        });
+                                      },
+                                      child: Text("Submit",
+                                          style: TextStyle(
+                                              fontSize: deviceWidth * 0.04)))
+                                ],
+                              ),
+                              onTap: null,
+                            ),
+                          );
+                        },
+                        itemCount: filteredForms.length,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : const LoadingAnimation2(),
       ),
     );
   }

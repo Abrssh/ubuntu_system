@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/task_database_service.dart';
 import 'package:ubuntu_system/Data/Model/task.dart';
@@ -31,6 +32,8 @@ class _EmployeeTasksState extends State<EmployeeTasks> {
     });
   }
 
+  DateFormat dateFormat = DateFormat("yMd");
+
   @override
   Widget build(BuildContext context) {
     final double deviceHeight = MediaQuery.of(context).size.height;
@@ -38,7 +41,7 @@ class _EmployeeTasksState extends State<EmployeeTasks> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tasks Done On this PC'),
+        title: const Text('Tasks Done'),
         centerTitle: true,
       ),
       body: loading
@@ -57,10 +60,12 @@ class _EmployeeTasksState extends State<EmployeeTasks> {
                         children: [
                           Text(
                               'Amount Earned: \$${task.payAmount.toStringAsFixed(2)}'),
-                          Text('Created Date: ${task.createdDate.toString()}'),
                           Text(
-                              'Feedback Date: ${task.feedbackDate.toString()}'),
-                          Text('Feedback: ${task.feedback}'),
+                              'Created Date: ${dateFormat.format(task.createdDate)}'),
+                          Text(
+                              'Feedback Date: ${dateFormat.format(task.feedbackDate)}'),
+                          Text(
+                              'Feedback: ${task.feedback == 99 ? 'N/A' : task.feedback}'),
                         ],
                       ),
                     ),
