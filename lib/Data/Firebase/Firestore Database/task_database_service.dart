@@ -26,6 +26,7 @@ class TaskDatabaseService {
           Task(
             pcProviderId: docSnap.get("pcProviderId"),
             employeeId: docSnap.get("employeeId"),
+            employeeName: docSnap.get("employeeName"),
             outlierTaskId: docSnap.get("outlierTaskId"),
             taskDocId: docSnap.id,
             payAmount: double.parse(docSnap.get("payAmount").toString()),
@@ -49,6 +50,7 @@ class TaskDatabaseService {
         transaction.set(taskCollection.doc(), {
           "pcProviderId": task.pcProviderId,
           "employeeId": task.employeeId,
+          "employeeName": task.employeeName,
           "outlierTaskId": task.outlierTaskId,
           "payAmount": task.payAmount,
           "createdDate": Timestamp.fromDate(task.createdDate),

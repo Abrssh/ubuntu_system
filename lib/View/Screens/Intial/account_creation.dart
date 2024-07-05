@@ -491,6 +491,7 @@ class _AccountCreationState extends State<AccountCreation> {
                                             formstatus: 0,
                                             // formHistory: {},
                                             lastUpdatedBy: "",
+                                            lastUpdaterName: "",
                                             lastUpdatedOn: DateTime.now(),
                                             accountStatus: 0,
                                             totalAmountEarned: 0,

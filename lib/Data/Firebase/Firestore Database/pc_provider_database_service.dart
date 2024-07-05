@@ -43,6 +43,7 @@ class PcProviderDatabaseService {
           formstatus: querySnapshot.docs.first.get("formStatus"),
           // formHistory: {},
           lastUpdatedBy: querySnapshot.docs.first.get("lastUpdatedBy"),
+          lastUpdaterName: querySnapshot.docs.first.get("lastUpdaterName"),
           lastUpdatedOn: lastUpdatedOn,
           accountStatus: int.parse(
               querySnapshot.docs.first.get("accountStatus").toString()),
@@ -93,6 +94,7 @@ class PcProviderDatabaseService {
             formstatus: docSnap.get("formStatus"),
             // formHistory: {},
             lastUpdatedBy: docSnap.get("lastUpdatedBy"),
+            lastUpdaterName: docSnap.get("lastUpdaterName"),
             lastUpdatedOn: lastUpdatedOn,
             accountStatus: int.parse(docSnap.get("accountStatus").toString()),
             totalAmountEarned:
@@ -226,11 +228,12 @@ class PcProviderDatabaseService {
     }
   }
 
-  Future<bool> updateFormStatus(
-      String pcProvDocId, int formStatus, String updaterId) {
+  Future<bool> updateFormStatus(String pcProvDocId, int formStatus,
+      String updaterId, String updaterName) {
     try {
       return pcProviderCollection.doc(pcProvDocId).update({
         "formStatus": formStatus,
+        "lastUpdaterName": updaterName,
         "lastUpdatedBy": updaterId,
         "lastUpdatedOn": Timestamp.now()
       }).then((value) => true);

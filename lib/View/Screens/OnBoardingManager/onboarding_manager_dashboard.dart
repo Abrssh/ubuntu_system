@@ -223,7 +223,7 @@ class _OnboardingManagerDashBoardState
                               subtitle: Column(
                                 children: [
                                   Text(
-                                      "Joined: ${dateFormat.format(filteredForms[index].createdDate)}) email: ${filteredForms[index].email}, phoneNumber: ${filteredForms[index].phoneNumber}, birthDate: ${dateFormat.format(filteredForms[index].birthDate)}, Govt ID: ${filteredForms[index].govtId}, Country: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
+                                      "Joined: ${dateFormat.format(filteredForms[index].createdDate)} \nEmail: ${filteredForms[index].email} \nLastUpdated By: ${filteredForms[index].lastUpdaterName != "" ? filteredForms[index].lastUpdaterName : "N/A"} \nPhoneNumber: ${filteredForms[index].phoneNumber} \nBirthDate: ${dateFormat.format(filteredForms[index].birthDate)} \nGovt ID: ${filteredForms[index].govtId} \nCountry: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceAround,
@@ -269,7 +269,8 @@ class _OnboardingManagerDashBoardState
                                                     .pcProviderDocId,
                                                 filteredForms[index].formstatus,
                                                 _onBoardingManager
-                                                    .onBoardManDocID)
+                                                    .onBoardManDocID,
+                                                _onBoardingManager.firstName)
                                             .then((value) {
                                           // setState(() {
                                           //   loading = true;

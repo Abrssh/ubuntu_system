@@ -1,5 +1,5 @@
 class Task {
-  final String pcProviderId, employeeId, outlierTaskId, taskDocId;
+  final String pcProviderId, employeeId, employeeName, outlierTaskId, taskDocId;
   final double payAmount;
   final int feedback;
   final DateTime createdDate, feedbackDate;
@@ -7,6 +7,7 @@ class Task {
   Task(
       {required this.pcProviderId,
       required this.employeeId,
+      required this.employeeName,
       required this.outlierTaskId,
       required this.taskDocId,
       required this.payAmount,

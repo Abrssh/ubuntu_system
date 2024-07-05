@@ -24,13 +24,14 @@ class PcProvider {
   // int = form status and dynamic equals [manager/adminstrator id, datetime]
   // final Map<int, Map<String, DateTime>> formHistory;
 
-  final String lastUpdatedBy;
+  final String lastUpdatedBy, lastUpdaterName;
 
   PcProvider(
       {required this.uid,
       required this.pcProviderDocId,
       required this.employeeId,
       required this.employeeName,
+      required this.lastUpdaterName,
       required this.firstName,
       required this.lastName,
       required this.birthDate,

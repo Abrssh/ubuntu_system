@@ -117,6 +117,9 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
     "Ready to be Active"
   ];
 
+  // Used to assign employees to a manager
+  List<EmployeeAccount> assignableEmployees = [];
+
   @override
   void initState() {
     super.initState();
@@ -131,6 +134,9 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
           // debugPrint("Emps: ${empEvent.length}");
           employeeAccounts.clear();
           employeeAccounts.addAll(empEvent);
+          assignableEmployees.clear();
+          assignableEmployees.addAll(empEvent);
+          assignableEmployees.removeWhere((element) => element.manager);
           employeeNames.clear();
           checkBoxValues.clear();
           for (var employee in employeeAccounts) {
@@ -138,8 +144,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
           }
           for (var i = 0; i < employeeAccounts.length; i++) {
             List<bool> tempCheckBoxVals = [];
-            for (var j = 0; j < employeeAccounts.length; j++) {
-              tempCheckBoxVals.add(employeeAccounts[j].managerId ==
+            for (var j = 0; j < assignableEmployees.length; j++) {
+              tempCheckBoxVals.add(assignableEmployees[j].managerId ==
                   employeeAccounts[i].employeeDocId);
             }
             checkBoxValues.add(tempCheckBoxVals);
@@ -231,7 +237,7 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                 height: deviceHeight * 0.055,
                                 child: const Icon(Icons.person)),
                             title: Text(
-                                "Name: ${employeeAccounts[index].firstName}  Income Earned: ${employeeAccounts[index].amountReceived} \$"),
+                                "Name: ${employeeAccounts[index].firstName}  Income Earned: ${employeeAccounts[index].amountReceived.toStringAsFixed(2)} \$"),
                             subtitle: Text(
                                 "Joined: ${dateFormat.format(employeeAccounts[index].createdDate)}, TL:${employeeAccounts[index].managerId != "" ? employeeAccounts[index].managerName : "N/A"}, PC assigned: ${employeeAccounts[index].pcProviderId != "" ? employeeAccounts[index].pcProviderName : "N/A"}"),
                             onTap: null,
@@ -300,10 +306,11 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                                 Expanded(
                                                   child: ListView.builder(
                                                     itemCount:
-                                                        employeeAccounts.length,
+                                                        assignableEmployees
+                                                            .length,
                                                     itemBuilder:
                                                         (context, index2) {
-                                                      return employeeAccounts[
+                                                      return assignableEmployees[
                                                                       index2]
                                                                   .employeeDocId !=
                                                               employeeAccounts[
@@ -324,9 +331,9 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                                                                 .leading,
                                                                         title:
                                                                             Text(
-                                                                          ("${employeeAccounts[index2].firstName}/${employeeAccounts[index2].email}").length < 20
-                                                                              ? ("${employeeAccounts[index2].firstName}/${employeeAccounts[index2].email}")
-                                                                              : "${("${employeeAccounts[index2].firstName}/${employeeAccounts[index2].email}").substring(0, 20)}...",
+                                                                          ("${assignableEmployees[index2].firstName}/${assignableEmployees[index2].email}").length < 20
+                                                                              ? ("${assignableEmployees[index2].firstName}/${assignableEmployees[index2].email}")
+                                                                              : "${("${assignableEmployees[index2].firstName}/${assignableEmployees[index2].email}").substring(0, 20)}...",
                                                                           style:
                                                                               TextStyle(color: checkBoxValues[index][index2] ? Colors.white : Colors.black),
                                                                         ),
@@ -390,7 +397,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                         i++) {
                                       if (checkBoxValues[index][i]) {
                                         employeesAddedTothisManag.add(
-                                            employeeAccounts[i].employeeDocId);
+                                            assignableEmployees[i]
+                                                .employeeDocId);
                                         // debugPrint(
                                         //     "Man: ${employeeAccounts[index].firstName} ${employeeAccounts[i].employeeDocId}");
                                       }
@@ -515,8 +523,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                   VoidCallback onFieldSubmitted) {
                                 _employeeSuggestionController.text =
                                     textEditingController.text;
-                                debugPrint(
-                                    "TxCo: ${textEditingController.text} ${_employeeSuggestionController.text}");
+                                // debugPrint(
+                                //     "TxCo: ${textEditingController.text} ${_employeeSuggestionController.text}");
                                 return TextFormField(
                                   controller: textEditingController,
                                   focusNode: focusNode,
@@ -696,7 +704,7 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                         subtitle: Column(
                           children: [
                             Text(
-                                "Joined: ${dateFormat.format(filteredForms[index].createdDate)} email: ${filteredForms[index].email}, phoneNumber: ${filteredForms[index].phoneNumber}, birthDate: ${dateFormat.format(filteredForms[index].birthDate)}, Govt ID: ${filteredForms[index].govtId}, Country: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
+                                "Joined: ${dateFormat.format(filteredForms[index].createdDate)} \nEmail: ${filteredForms[index].email} \nLastUpdated By: ${filteredForms[index].lastUpdaterName != "" ? filteredForms[index].lastUpdaterName : "N/A"} \nPhoneNumber: ${filteredForms[index].phoneNumber} \nBirthDate: ${dateFormat.format(filteredForms[index].birthDate)} \nGovt ID: ${filteredForms[index].govtId} \nCountry: ${filteredForms[index].country}, State: ${filteredForms[index].state}, City: ${filteredForms[index].city}, Street Address: ${filteredForms[index].streetaddress}, Zip Code: ${filteredForms[index].zipCode.toString()}"),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
@@ -738,7 +746,8 @@ class _AdministratorDashBoardState extends State<AdministratorDashBoard> {
                                       .updateFormStatus(
                                           filteredForms[index].pcProviderDocId,
                                           filteredForms[index].formstatus,
-                                          _administrator.adminDocId)
+                                          _administrator.adminDocId,
+                                          "admin")
                                       .then((value) {
                                     // setState(() {
                                     //   loading = true;
