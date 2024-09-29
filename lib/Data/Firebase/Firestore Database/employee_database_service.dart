@@ -1,8 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:ubuntu_system/Data/Interface/employee_repository.dart';
 import 'package:ubuntu_system/Data/Model/employee_account.dart';
 
-class EmployeeDatabaseService {
+class EmployeeDatabaseService implements EmployeeRepository {
   final CollectionReference employeeCollection =
       FirebaseFirestore.instance.collection("employee");
 
@@ -81,6 +82,7 @@ class EmployeeDatabaseService {
     }
   }
 
+  @override
   Future<bool> createEmployeeAccount(EmployeeAccount employeeAccount) {
     try {
       return employeeCollection.doc().set({
@@ -109,6 +111,7 @@ class EmployeeDatabaseService {
     }
   }
 
+  @override
   Stream<List<EmployeeAccount>> getEmployee(String uid) {
     try {
       return employeeCollection
@@ -121,6 +124,7 @@ class EmployeeDatabaseService {
     }
   }
 
+  @override
   Stream<List<EmployeeAccount>> getEmployeesForTL(String managerId) {
     try {
       return employeeCollection
@@ -133,6 +137,7 @@ class EmployeeDatabaseService {
     }
   }
 
+  @override
   Stream<List<EmployeeAccount>> getEmployeesForAdmin() {
     try {
       return employeeCollection.snapshots().map(_mapQuerSnapToEmployeeForTL);
@@ -142,6 +147,7 @@ class EmployeeDatabaseService {
     }
   }
 
+  @override
   Future<bool?> assignEmployeeManager(String employeeId, String managerName,
       bool isManager, List<String> employeesAssignedToManager) async {
     try {

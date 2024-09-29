@@ -499,6 +499,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/employee_database_service.dart';
 import 'package:ubuntu_system/Data/Firebase/Firestore%20Database/pc_provider_database_service.dart';
+import 'package:ubuntu_system/Data/Interface/employee_repository.dart';
 import 'package:ubuntu_system/Data/Model/employee_account.dart';
 import 'package:ubuntu_system/Data/Model/pc_provider.dart';
 import 'package:ubuntu_system/Provider/authentication_provider.dart';
@@ -580,18 +581,20 @@ class _EmployeeDashBoardState extends State<EmployeeDashBoard> {
 
   DateFormat dateFormat = DateFormat("yMd");
 
+  final EmployeeRepository _employeeRepository = EmployeeDatabaseService();
+
   @override
   void initState() {
     super.initState();
     var authProv = context.read<AuthenticationProvider>().userVal;
     var employProv = context.read<EmployeeAccProvider>();
     getEmployeeSub =
-        EmployeeDatabaseService().getEmployee(authProv!.uid).listen((event) {
+        _employeeRepository.getEmployee(authProv!.uid).listen((event) {
       _employeeAccount = event[0];
       employProv.assignEmployeeAcc(_employeeAccount);
 
       if (_employeeAccount.manager) {
-        getEmployeesForTlSub = EmployeeDatabaseService()
+        getEmployeesForTlSub = _employeeRepository
             .getEmployeesForTL(_employeeAccount.employeeDocId)
             .listen((event) {
           debugPrint("Emps: ${event.length}");
